@@ -104,7 +104,7 @@ export default function GameMenu({
               {glitchText}
             </h1>
             <p className="text-gray-400 font-mono text-[11px] tracking-wider mt-2">
-              A 3D horror simulator build for AI Studio
+              A 3D horror simulator made by shreshth
             </p>
           </div>
 
