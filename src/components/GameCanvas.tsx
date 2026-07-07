@@ -1071,31 +1071,52 @@ export default function GameCanvas({
     const tick = () => {
       const dt = Math.min(0.03, clock.getDelta()); // Cap delta to avoid physics explosion
       const time = clock.getElapsedTime();
+      
+      const pState = playerRef.current;
+      const mState = monsterRef.current;
 
       // Ensure Backrooms fluorescent lights pulse and flicker realistically
       emergencyLights.forEach((el) => {
         let flicker = 1.0;
         const rand = Math.random();
-        if (rand < 0.04) {
-          flicker = 0.08; // sudden rapid blackout
-        } else if (rand < 0.07) {
-          flicker = 0.45; // quick dim flicker
+        const isChasing = mState && mState.state === 'CHASE' && stateRef.current === 'PLAYING';
+
+        if (isChasing) {
+          // Intense horror flickering during a chase!
+          if (rand < 0.16) {
+            flicker = 0.01; // frequent heavy blackouts
+          } else if (rand < 0.35) {
+            flicker = 0.3; // rapid heavy dimming
+          } else {
+            flicker = 0.82 + Math.sin(time * 30) * 0.18; // fast vibrating pulse
+          }
         } else {
-          // slight standard humming micro-fluctuation
-          flicker = 0.96 + Math.sin(time * 15) * 0.04;
+          // Normal ambient flickering
+          if (rand < 0.04) {
+            flicker = 0.08; // sudden rapid blackout
+          } else if (rand < 0.07) {
+            flicker = 0.45; // quick dim flicker
+          } else {
+            // slight standard humming micro-fluctuation
+            flicker = 0.96 + Math.sin(time * 15) * 0.04;
+          }
         }
 
-        const pulse = el.baseIntensity * flicker;
+        const pulse = el.baseIntensity * flicker * (isChasing ? 0.65 : 1.0); // Slightly dimmer during chase
         el.light.intensity = pulse;
 
         const meshMat = el.mesh.material as THREE.MeshBasicMaterial;
         if (meshMat && meshMat.color) {
-          meshMat.color.setRGB(0.98 * flicker, 0.97 * flicker, 0.88 * flicker);
+          if (isChasing) {
+            // Glow a haunting blood-red during chase!
+            meshMat.color.setRGB(0.95 * flicker, 0.12 * flicker, 0.04 * flicker);
+            el.light.color.setHex(0xff1100);
+          } else {
+            meshMat.color.setRGB(0.98 * flicker, 0.97 * flicker, 0.88 * flicker);
+            el.light.color.setHex(0xfffeda);
+          }
         }
       });
-
-      const pState = playerRef.current;
-      const mState = monsterRef.current;
 
       if (stateRef.current === 'PLAYING') {
         const timeNow = Date.now();
@@ -1518,6 +1539,69 @@ export default function GameCanvas({
           lg.rotation.x = Math.sin(time * speedFactor + phase) * 0.45;
         });
 
+        // Dynamic Eye and Headlight colors based on Monster state in PLAYING mode
+        const leftMat = monsterEyesRef.current ? monsterEyesRef.current.left.material as THREE.MeshStandardMaterial : null;
+        const rightMat = monsterEyesRef.current ? monsterEyesRef.current.right.material as THREE.MeshStandardMaterial : null;
+        const headLight = mState.headLight;
+
+        if (mState.state === 'CHASE') {
+          // Intense pulsing red eyes and headlight during CHASE!
+          const pulseInt = 4.0 + Math.sin(time * 20) * 1.5;
+          if (leftMat && leftMat.color) leftMat.color.setHex(0xff0000);
+          if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0xcc0000);
+          if (rightMat && rightMat.color) rightMat.color.setHex(0xff0000);
+          if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0xcc0000);
+          if (headLight) {
+            headLight.color.setHex(0xff0000);
+            headLight.intensity = pulseInt;
+            headLight.distance = 15;
+          }
+        } else if (mState.state === 'SEARCH' || mState.state === 'INVESTIGATE') {
+          // Curious/investigating amber color
+          if (leftMat && leftMat.color) leftMat.color.setHex(0xffaa00);
+          if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0x663300);
+          if (rightMat && rightMat.color) rightMat.color.setHex(0xffaa00);
+          if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0x663300);
+          if (headLight) {
+            headLight.color.setHex(0xffaa00);
+            headLight.intensity = 2.0;
+            headLight.distance = 10;
+          }
+        } else {
+          // Standard patrol yellow/white light
+          if (leftMat && leftMat.color) leftMat.color.setHex(0xfffeda);
+          if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0x444422);
+          if (rightMat && rightMat.color) rightMat.color.setHex(0xfffeda);
+          if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0x444422);
+          if (headLight) {
+            headLight.color.setHex(0xfffeda);
+            headLight.intensity = 1.2;
+            headLight.distance = 10;
+          }
+        }
+
+        // Dynamic fog density and color shift as the monster draws closer during chase
+        if (sceneRef.current && sceneRef.current.fog && sceneRef.current.fog instanceof THREE.FogExp2) {
+          const s = sceneRef.current;
+          const fog = s.fog as THREE.FogExp2;
+          if (mState.state === 'CHASE') {
+            const proximity = Math.max(0, 1.0 - (monsterDist / 25.0)); // 0 to 1
+            const fogColor = new THREE.Color().lerpColors(
+              new THREE.Color(0x0c0b08), // Normal yellowish-black Backrooms
+              new THREE.Color(0x1a0202), // Ominous deep horror crimson-black
+              proximity
+            );
+            s.background = fogColor;
+            fog.color = fogColor;
+            fog.density = 0.05 + proximity * 0.06; // Dense cloying fog closes in
+          } else {
+            const fogColor = new THREE.Color(0x0c0b08);
+            s.background = fogColor;
+            fog.color = fogColor;
+            fog.density = 0.05;
+          }
+        }
+
         // ==========================================
         // 5. ESCAPE WIN CONDITIONS / DEATH JUMP SCARE
         // ==========================================
@@ -1607,9 +1691,14 @@ export default function GameCanvas({
 
       camera.lookAt(lookTarget);
 
-      // Horror Chase camera shaking/rumble effect
+      // Horror Chase camera shaking/rumble effect (scales with monster proximity!)
       if (mState.state === 'CHASE' && stateRef.current === 'PLAYING') {
-        const shakePower = 0.035;
+        const monsterDist = Math.sqrt(
+          (pState.x - mState.x) * (pState.x - mState.x) +
+          (pState.z - mState.z) * (pState.z - mState.z)
+        );
+        const proximity = Math.max(0, 1.0 - (monsterDist / 25.0)); // 0 to 1
+        const shakePower = 0.015 + proximity * 0.11; // scales from minor vibration to heavy camera rattle
         camera.position.x += (Math.random() - 0.5) * shakePower;
         camera.position.y += (Math.random() - 0.5) * shakePower;
         camera.position.z += (Math.random() - 0.5) * shakePower;

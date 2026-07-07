@@ -26,20 +26,50 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
   const isPortalUnlocked = playerStats.fusesCollected >= playerStats.totalFuses;
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-6">
-      {/* 1. Immersive Tension Vignette (Pulses based on proximity) */}
+    <div className={`absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-6 transition-opacity duration-300 ${
+      monsterState === 'CHASE' && proximityIntensity > 0.7 ? 'opacity-95' : 'opacity-100'
+    }`}>
+      {/* 1. Immersive Tension Vignette (Pulses & closes in based on proximity) */}
       {proximityIntensity > 0 && (
         <div
           style={{
-            opacity: proximityIntensity * 0.75,
-            animationDuration: `${Math.max(0.4, 1.5 - proximityIntensity * 1.1)}s`,
+            opacity: proximityIntensity * 0.9,
+            borderWidth: `${Math.max(16, 16 + proximityIntensity * 96)}px`,
+            borderColor: monsterState === 'CHASE' ? 'rgba(127, 29, 29, 0.8)' : 'rgba(88, 28, 135, 0.45)',
+            animationDuration: monsterState === 'CHASE' ? `${Math.max(0.25, 1.2 - proximityIntensity * 1.05)}s` : '2.0s',
           }}
-          className={`absolute inset-0 border-[24px] md:border-[48px] pointer-events-none transition-all duration-300 z-0 ${
-            monsterState === 'CHASE'
-              ? 'border-red-900/60 animate-pulse'
-              : 'border-red-950/40'
-          }`}
+          className={`absolute inset-0 pointer-events-none transition-all duration-150 z-0 animate-pulse`}
         />
+      )}
+
+      {/* 1b. Chromatic Aberration & Radial Blood Gradients */}
+      {proximityIntensity > 0.3 && (
+        <div
+          style={{
+            background: `radial-gradient(circle, transparent 20%, rgba(${monsterState === 'CHASE' ? '220, 38, 38' : '124, 58, 237'}, ${proximityIntensity * 0.45}) 100%)`
+          }}
+          className="absolute inset-0 pointer-events-none z-0"
+        />
+      )}
+
+      {/* 1c. CRT Scanline / Noise Static Interference (Vibrates and flickers when being chased) */}
+      {monsterState === 'CHASE' && (
+        <div className="absolute inset-0 pointer-events-none z-0 mix-blend-overlay opacity-30 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,3px_100%] animate-pulse" />
+      )}
+
+      {/* 1d. Red Glitch Warnings across the screen */}
+      {monsterState === 'CHASE' && proximityIntensity > 0.6 && (
+        <div className="absolute top-28 left-6 right-6 flex flex-col items-center justify-center gap-1.5 animate-pulse z-20">
+          <div className="bg-red-600/10 border border-red-500/50 px-3 py-1.5 rounded-md backdrop-blur-md flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+            <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-red-500 uppercase">
+              CRITICAL THREAT RANGE
+            </span>
+          </div>
+          <span className="text-[9px] font-mono text-zinc-400">
+            DUE TO HIGH SIGNAL DISTORTION, GET TO COVERS!
+          </span>
+        </div>
       )}
 
       {/* 2. Top Bar: Title & Core Objectives */}
