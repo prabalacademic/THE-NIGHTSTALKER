@@ -177,7 +177,7 @@ export default function GameCanvas({
     const eyes = monsterEyesRef.current;
     const headLight = monsterRef.current ? monsterRef.current.headLight : null;
 
-    if (gameState === 'ENCOUNTER' || gameState === 'MENU') {
+    if (gameState === 'ENCOUNTER') {
       if (resetGameRef.current) {
         resetGameRef.current();
       }
@@ -199,7 +199,7 @@ export default function GameCanvas({
       if (flashlightRef.current) flashlightRef.current.visible = false;
       if (flashFlareRef.current) flashFlareRef.current.visible = false;
 
-      // Update lighting based on wrongCount in ENCOUNTER / MENU phase
+      // Update lighting based on wrongCount in ENCOUNTER phase
       if (scene && ambientLight && sunLight) {
         sunLight.visible = true;
         if (wrongCount === 0) {
@@ -272,6 +272,13 @@ export default function GameCanvas({
       // Restore player mesh visibility
       const pState = playerRef.current;
       pState.mesh.visible = true;
+
+      // Set monster to start chasing from its close-up encounter position
+      const mState = monsterRef.current;
+      mState.state = 'CHASE';
+      mState.x = gridToWorldX(1);
+      mState.z = gridToWorldZ(2.3);
+      mState.mesh.position.set(mState.x, 0, mState.z);
 
       // Restore standard dark Backrooms horror fog and lights
       if (scene) {
@@ -1016,7 +1023,7 @@ export default function GameCanvas({
 
       // Reset monster
       const mState = monsterRef.current;
-      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+      if (stateRef.current === 'ENCOUNTER') {
         mState.x = gridToWorldX(1);
         mState.z = gridToWorldZ(2.3); // standing closer in the corridor
       } else {
@@ -1025,7 +1032,7 @@ export default function GameCanvas({
       }
       mState.state = 'PATROL';
       mState.patrolIndex = 0;
-      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+      if (stateRef.current === 'ENCOUNTER') {
         mState.targetX = mState.x;
         mState.targetZ = mState.z;
       } else {
@@ -1036,7 +1043,7 @@ export default function GameCanvas({
       mState.searchTimer = 0;
       mState.patrolWaitTimer = 0;
       mState.mesh.position.set(mState.x, 0, mState.z);
-      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+      if (stateRef.current === 'ENCOUNTER') {
         mState.mesh.rotation.y = Math.PI; // Face player
       }
 
@@ -1558,7 +1565,7 @@ export default function GameCanvas({
         });
 
         onUpdateMonsterStats(mState.state, monsterDist);
-      } else if (stateRef.current === 'ENCOUNTER' || stateRef.current === 'MENU') {
+      } else if (stateRef.current === 'ENCOUNTER') {
         // Creepy heavy-breathing idle animation
         // Bobbing body up and down slowly like it is breathing heavily
         mState.mesh.position.set(mState.x, Math.sin(time * 3.5) * 0.15, mState.z);
@@ -1584,8 +1591,8 @@ export default function GameCanvas({
 
       let lookTarget = new THREE.Vector3(pState.x, pState.y + 1.2, pState.z);
 
-      if (stateRef.current === 'ENCOUNTER' || stateRef.current === 'MENU') {
-        // Look directly at the monster staring at us in the menu/encounter
+      if (stateRef.current === 'ENCOUNTER') {
+        // Look directly at the monster staring at us in the encounter
         targetCamX = pState.x;
         targetCamZ = pState.z - 2.5; // Closer view for a direct staring face-off
         targetCamY = pState.y + 2.4; // Perfect eye-to-eye height
