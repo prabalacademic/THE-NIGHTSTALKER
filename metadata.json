@@ -1,0 +1,6 @@
+{
+  "name": "Nightstalker",
+  "description": "A tense 3D horror chase game. Evade the AI monster, collect fuses, and find the escape portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
