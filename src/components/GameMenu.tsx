@@ -529,7 +529,7 @@ export default function GameMenu({
             </span>
             <h2 className="text-4xl font-black text-white tracking-tighter uppercase font-sans">THE CHASED ONE</h2>
             <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono leading-relaxed">
-              Against all mechanical odds, you survived the predator's maximum pursuit duration. The Sector 4 containment doors automatically overrode.
+              Against all mechanical odds, you survived the predator's maximum pursuit duration. The Black Painted Aarav containment doors automatically overrode.
             </p>
           </div>
 

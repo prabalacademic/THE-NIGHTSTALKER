@@ -169,16 +169,12 @@ export default function App() {
       audio.triggerWrongAnswer();
       setWrongCount((prev) => {
         const next = prev + 1;
-        if (next >= 3) {
-          handleBreakEyeContact();
-        } else {
-          audio.triggerAngerSting();
-          // Instantly accelerate the timer to trigger the higher agitation state
-          if (next === 1) {
-            setEncounterTime((t) => Math.max(t, 3));
-          } else if (next === 2) {
-            setEncounterTime((t) => Math.max(t, 6));
-          }
+        audio.triggerAngerSting();
+        // Instantly accelerate the timer to trigger the higher agitation state
+        if (next === 1) {
+          setEncounterTime((t) => Math.max(t, 3));
+        } else if (next >= 2) {
+          setEncounterTime((t) => Math.max(t, 6));
         }
         return next;
       });
@@ -215,7 +211,7 @@ export default function App() {
       const timeLeft = Math.max(0, 10 - encounterTime);
       setCrimsonCountdown(timeLeft);
       if (timeLeft <= 0) {
-        handleBreakEyeContact();
+        // Timer reached zero - nothing happens (no death)
       }
     } else if (encounterTime >= 3) {
       setWrongCount((prev) => {
@@ -532,21 +528,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Crimson Warning Timer display */}
-          {wrongCount === 2 && (
-            <div className="w-full max-w-sm mx-auto p-4 bg-red-950/40 border border-red-600/30 rounded-xl backdrop-blur-md flex flex-col items-center justify-center gap-1 select-none pointer-events-none animate-pulse">
-              <span className="text-[10px] font-mono font-black text-red-500 tracking-[0.25em] uppercase animate-ping">
-                CRITICAL EXPOSURE WARNING
-              </span>
-              <span className="text-3xl md:text-5xl font-black text-white font-mono tracking-wider drop-shadow-[0_0_12px_rgba(239,68,68,0.7)] mt-1">
-                {crimsonCountdown.toFixed(1)}s
-              </span>
-              <span className="text-[10px] font-mono text-red-400 mt-1">
-                BREAK CONTACT IMMEDIATELY OR FACE DEATH!
-              </span>
-            </div>
-          )}
-
           {/* Bottom dialogue / Action box */}
           <div className="w-full max-w-lg mx-auto bg-zinc-950/95 border-2 border-zinc-800/80 rounded-2xl p-6 backdrop-blur-2xl pointer-events-auto flex flex-col gap-5 mb-8 shadow-2xl relative overflow-hidden">
             <div className={`absolute inset-0 bg-red-600/5 transition-opacity duration-300 ${wrongCount > 0 ? 'opacity-100' : 'opacity-0'}`} />
@@ -567,7 +548,7 @@ export default function App() {
                 ) : wrongCount === 1 ? (
                   "Amber light envelopes its gaze! An incorrect override or excessive delay is agitating its synaptic core. Answer the riddle correctly before it reaches hostile state!"
                 ) : (
-                  "CRIMSON RAGE DETECTED. Core synaptic overload. Complete the riddle override immediately or face instant death!"
+                  "CRIMSON RAGE DETECTED. Core synaptic overload. Complete the riddle override immediately!"
                 )}
               </p>
             </div>
