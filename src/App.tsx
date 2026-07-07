@@ -52,6 +52,8 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [playerPlatform, setPlayerPlatform] = useState<'DESKTOP' | 'MOBILE' | null>(null);
   const [showPlatformSelector, setShowPlatformSelector] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [encounterTime, setEncounterTime] = useState<number>(0);
   
   const [settings, setSettings] = useState<GameSettings>({
     volume: 0.5,
@@ -138,6 +140,11 @@ export default function App() {
     setIsGlitchingAnger(false);
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
+    
+    // Select a random question/riddle to solve before we can run
+    const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
+    setCurrentQuestion(QUESTIONS[randomIdx]);
+    
     setGameState('ENCOUNTER');
   };
 
@@ -150,62 +157,94 @@ export default function App() {
     }, 600);
   };
 
-  // Manage Cinematic Staring sequence in ENCOUNTER state
+  const handleAnswerOption = (option: string) => {
+    if (!currentQuestion) return;
+
+    if (option === currentQuestion.correctAnswer) {
+      // Correct! Escape direct eye contact
+      audio.triggerCorrectAnswer();
+      handleBreakEyeContact();
+    } else {
+      // Incorrect guess penalties
+      audio.triggerWrongAnswer();
+      setWrongCount((prev) => {
+        const next = prev + 1;
+        if (next >= 3) {
+          setGameState('GAMEOVER');
+        } else {
+          audio.triggerAngerSting();
+          // Instantly accelerate the timer to trigger the higher agitation state
+          if (next === 1) {
+            setEncounterTime((t) => Math.max(t, 3));
+          } else if (next === 2) {
+            setEncounterTime((t) => Math.max(t, 6));
+          }
+        }
+        return next;
+      });
+    }
+  };
+
+  // Manage Cinematic Staring sequence Timer
   React.useEffect(() => {
     if (gameState !== 'ENCOUNTER') return;
 
+    setEncounterTime(0);
     setWrongCount(0);
     setCrimsonCountdown(4);
 
-    // 0s to 3s -> Turquoise (wrongCount === 0)
-    // 3s to 6s -> Amber (wrongCount === 1)
-    // 6s to 10s -> Crimson (wrongCount === 2)
+    const interval = setInterval(() => {
+      setEncounterTime((prev) => prev + 1);
+    }, 1000);
 
-    const timer1 = setTimeout(() => {
-      setWrongCount(1);
-      audio.triggerAngerSting();
-    }, 3000);
-
-    const timer2 = setTimeout(() => {
-      setWrongCount(2);
-      audio.triggerAngerSting();
-    }, 6000);
-
-    let countdownInterval: NodeJS.Timeout | null = null;
-    
-    const timer3 = setTimeout(() => {
-      let timeLeft = 4;
-      setCrimsonCountdown(4);
-      
-      countdownInterval = setInterval(() => {
-        timeLeft -= 1;
-        setCrimsonCountdown(timeLeft);
-        if (timeLeft <= 0) {
-          if (countdownInterval) clearInterval(countdownInterval);
-          setGameState('GAMEOVER');
-        }
-      }, 1000);
-    }, 6000);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      if (countdownInterval) clearInterval(countdownInterval);
-    };
+    return () => clearInterval(interval);
   }, [gameState]);
 
-  // Keyboard shortcut for spacebar to break eye contact & run
+  // Synchronize agitation states and final countdown based on encounterTime
+  React.useEffect(() => {
+    if (gameState !== 'ENCOUNTER') return;
+
+    if (encounterTime >= 6) {
+      setWrongCount((prev) => {
+        if (prev < 2) {
+          audio.triggerAngerSting();
+          return 2;
+        }
+        return prev;
+      });
+      const timeLeft = Math.max(0, 10 - encounterTime);
+      setCrimsonCountdown(timeLeft);
+      if (timeLeft <= 0) {
+        setGameState('GAMEOVER');
+      }
+    } else if (encounterTime >= 3) {
+      setWrongCount((prev) => {
+        if (prev < 1) {
+          audio.triggerAngerSting();
+          return 1;
+        }
+        return prev;
+      });
+    }
+  }, [encounterTime, gameState]);
+
+  // Keyboard shortcut for spacebar to break eye contact is removed (must answer riddle)
+  // Instead, support keys 1, 2, 3, 4 to select answers!
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameState === 'ENCOUNTER' && e.code === 'Space') {
-        e.preventDefault();
-        handleBreakEyeContact();
+      if (gameState === 'ENCOUNTER') {
+        if (['1', '2', '3', '4'].includes(e.key)) {
+          e.preventDefault();
+          const optionIdx = parseInt(e.key, 10) - 1;
+          if (currentQuestion && currentQuestion.options[optionIdx]) {
+            handleAnswerOption(currentQuestion.options[optionIdx]);
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState]);
+  }, [gameState, currentQuestion]);
 
   return (
     <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col justify-center select-none">
@@ -522,29 +561,53 @@ export default function App() {
                  wrongCount === 1 ? 'THE MONSTER IS AGITATED:' :
                  '⚠️ DO NOT MAINTAIN DIRECT EYE CONTACT:'}
               </span>
-              <p className="text-xs md:text-sm text-gray-300 font-sans leading-relaxed tracking-wide">
+              <p className="text-xs text-gray-300 font-sans leading-relaxed tracking-wide">
                 {wrongCount === 0 ? (
-                  "The anomaly stands frozen, holding curious turquoise eye-contact. It is observing your breathing rate. You are free to turn and escape, but wait too long and it will begin to agitate."
+                  "The anomaly holds curious turquoise eye-contact. To desynchronize its gaze and gain an opening to run, you must override its anomalous wavelength by solving the security riddle."
                 ) : wrongCount === 1 ? (
-                  "Its limbs begin to twitch as Amber light envelopes its gaze. Headlights are flickering, static hum rises. Break eye contact now before it enters full hostile rage!"
+                  "Amber light envelopes its gaze! An incorrect override or excessive delay is agitating its synaptic core. Answer the riddle correctly before it reaches hostile state!"
                 ) : (
-                  "The beast has entered CRIMSON RAGE state. Immediate hostility is imminent. Break eye-contact immediately, then run and utilize hiding lockers across the modular Backrooms pillars to break line-of-sight."
+                  "CRIMSON RAGE DETECTED. Core synaptic overload. Complete the riddle override immediately or face instant death!"
                 )}
               </p>
             </div>
 
-            {/* Quick Action Button */}
-            <div className="relative z-10 flex flex-col gap-2">
-              <button
-                onClick={handleBreakEyeContact}
-                className="w-full py-4 bg-red-700 hover:bg-red-600 border border-red-500/50 hover:border-red-400 text-white font-bold tracking-[0.25em] uppercase rounded-xl transition-all hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] active:scale-98 cursor-pointer text-xs md:text-sm font-sans flex items-center justify-center gap-2"
-              >
-                [ BREAK EYE CONTACT & RUN! ]
-              </button>
-              <span className="text-[10px] text-zinc-500 font-mono tracking-widest text-center">
-                OR PRESS <span className="bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 rounded text-zinc-400">SPACEBAR</span>
-              </span>
-            </div>
+            {/* Riddle Question Block */}
+            {currentQuestion && (
+              <div className="flex flex-col gap-2 relative z-10 border-t border-b border-zinc-800/80 py-3 mt-1">
+                <span className="text-[9px] font-mono font-bold text-red-500 tracking-wider">
+                  ⚠️ SYNAPTIC OVERRIDE RIDDLE:
+                </span>
+                <p className="text-xs md:text-sm text-white font-sans font-bold leading-relaxed bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/40 text-left">
+                  {currentQuestion.text}
+                </p>
+              </div>
+            )}
+
+            {/* Grid of Options */}
+            {currentQuestion && (
+              <div className="relative z-10 flex flex-col gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {currentQuestion.options.map((option, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswerOption(option)}
+                      className="group relative bg-zinc-900/60 hover:bg-red-950/20 border border-zinc-800 hover:border-red-600/40 p-3 rounded-xl text-left transition-all hover:scale-[1.01] active:scale-99 flex items-center gap-3 cursor-pointer"
+                    >
+                      <span className="w-6 h-6 rounded bg-zinc-950 border border-zinc-800 group-hover:border-red-600/30 flex items-center justify-center text-[11px] font-mono font-bold text-zinc-500 group-hover:text-red-500 transition-colors shrink-0">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors">
+                        {option}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[9px] text-zinc-500 font-mono tracking-widest text-center mt-1 uppercase">
+                  SOLVE CORRECTLY TO ESCAPE • KEYBOARD INPUT <span className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-zinc-400 font-bold">1 - 4</span> SUPPORTED
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
