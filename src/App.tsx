@@ -53,7 +53,6 @@ export default function App() {
   const [playerPlatform, setPlayerPlatform] = useState<'DESKTOP' | 'MOBILE' | null>(null);
   const [showPlatformSelector, setShowPlatformSelector] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
-  const [encounterTime, setEncounterTime] = useState<number>(0);
   
   const [settings, setSettings] = useState<GameSettings>({
     volume: 0.5,
@@ -80,7 +79,7 @@ export default function App() {
 
   // Staring / Encounter state
   const [wrongCount, setWrongCount] = useState(0);
-  const [crimsonCountdown, setCrimsonCountdown] = useState<number>(4);
+  const [correctCount, setCorrectCount] = useState(0);
   const [isGlitchingAnger, setIsGlitchingAnger] = useState(false);
 
   // Touch & Keyboard joystick direction vector
@@ -136,7 +135,6 @@ export default function App() {
 
   const startEncounter = () => {
     setWrongCount(0);
-    setCrimsonCountdown(4);
     setIsGlitchingAnger(false);
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
@@ -148,81 +146,33 @@ export default function App() {
     setGameState('ENCOUNTER');
   };
 
-  const handleBreakEyeContact = () => {
-    audio.triggerPickup(); // nice mechanical escape clunk/transition sound
-    setIsGlitchingAnger(true);
-    setTimeout(() => {
-      setIsGlitchingAnger(false);
-      setGameState('PLAYING');
-    }, 600);
-  };
-
   const handleAnswerOption = (option: string) => {
     if (!currentQuestion) return;
 
     if (option === currentQuestion.correctAnswer) {
       // Correct! Escape direct eye contact
       audio.triggerCorrectAnswer();
-      handleBreakEyeContact();
+      // Logic for 3 correct answers to trigger WIN/THE_TRUTH
+      const nextCorrect = correctCount + 1;
+      setCorrectCount(nextCorrect);
+      if (nextCorrect >= 3) {
+        setGameState('THE_TRUTH');
+      } else {
+        // Get next question
+        const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
+        setCurrentQuestion(QUESTIONS[randomIdx]);
+      }
     } else {
       // Incorrect guess penalties
       audio.triggerWrongAnswer();
-      setWrongCount((prev) => {
-        const next = prev + 1;
-        audio.triggerAngerSting();
-        // Instantly accelerate the timer to trigger the higher agitation state
-        if (next === 1) {
-          setEncounterTime((t) => Math.max(t, 3));
-        } else if (next >= 2) {
-          setEncounterTime((t) => Math.max(t, 6));
-        }
-        return next;
-      });
+      const nextWrong = wrongCount + 1;
+      setWrongCount(nextWrong);
+      if (nextWrong >= 3) {
+        setGameState('GAMEOVER');
+      }
+      // Eye color changes in GameCanvas based on wrongCount (0, 1, 2)
     }
   };
-
-  // Manage Cinematic Staring sequence Timer
-  React.useEffect(() => {
-    if (gameState !== 'ENCOUNTER') return;
-
-    setEncounterTime(0);
-    setWrongCount(0);
-    setCrimsonCountdown(4);
-
-    const interval = setInterval(() => {
-      setEncounterTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [gameState]);
-
-  // Synchronize agitation states and final countdown based on encounterTime
-  React.useEffect(() => {
-    if (gameState !== 'ENCOUNTER') return;
-
-    if (encounterTime >= 6) {
-      setWrongCount((prev) => {
-        if (prev < 2) {
-          audio.triggerAngerSting();
-          return 2;
-        }
-        return prev;
-      });
-      const timeLeft = Math.max(0, 10 - encounterTime);
-      setCrimsonCountdown(timeLeft);
-      if (timeLeft <= 0) {
-        // Timer reached zero - nothing happens (no death)
-      }
-    } else if (encounterTime >= 3) {
-      setWrongCount((prev) => {
-        if (prev < 1) {
-          audio.triggerAngerSting();
-          return 1;
-        }
-        return prev;
-      });
-    }
-  }, [encounterTime, gameState]);
 
   // Keyboard shortcut for spacebar to break eye contact is removed (must answer riddle)
   // Instead, support keys 1, 2, 3, 4 to select answers!
@@ -260,6 +210,7 @@ export default function App() {
           flashlightOn={playerStats.flashlightOn}
           onToggleFlashlight={handleToggleFlashlight}
           wrongCount={wrongCount}
+          correctCount={correctCount}
         />
       </div>
 
