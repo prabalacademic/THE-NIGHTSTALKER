@@ -168,7 +168,7 @@ export default function App() {
       const nextWrong = wrongCount + 1;
       setWrongCount(nextWrong);
       if (nextWrong >= 3) {
-        setGameState('GAMEOVER');
+        setGameState('PLAYING');
       }
       // Eye color changes in GameCanvas based on wrongCount (0, 1, 2)
     }
