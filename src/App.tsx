@@ -5,6 +5,7 @@ import GameHUD from './components/GameHUD';
 import GameMenu from './components/GameMenu';
 import VirtualJoystick from './components/VirtualJoystick';
 import { audio } from './utils/audio';
+import { Monitor, Smartphone } from 'lucide-react';
 
 interface Question {
   text: string;
@@ -49,6 +50,8 @@ const GLITCH_TEXTS = ["ØXØ WARNING ØXØ", "UNSTABLE BIOMASS", "HE IS ANGRY", 
 
 export default function App() {
   const [gameState, setGameState] = useState<GameState>('MENU');
+  const [playerPlatform, setPlayerPlatform] = useState<'DESKTOP' | 'MOBILE' | null>(null);
+  const [showPlatformSelector, setShowPlatformSelector] = useState(false);
   
   const [settings, setSettings] = useState<GameSettings>({
     volume: 0.5,
@@ -238,8 +241,8 @@ export default function App() {
         />
       )}
 
-      {/* 3. Virtual Mobile Controllers overlay (Active when playing) */}
-      {gameState === 'PLAYING' && !showLeaveConfirmation && (
+      {/* 3. Virtual Mobile Controllers overlay (Active when playing and player selected MOBILE) */}
+      {gameState === 'PLAYING' && !showLeaveConfirmation && playerPlatform === 'MOBILE' && (
         <VirtualJoystick
           onMove={handleJoystickMove}
           onJump={handleJump}
@@ -287,6 +290,7 @@ export default function App() {
                 onClick={() => {
                   audio.triggerClick();
                   setShowLeaveConfirmation(false);
+                  setPlayerPlatform(null);
                   setGameState('MENU');
                 }}
                 className="flex-1 bg-red-600/25 hover:bg-red-600 border border-red-600 px-4 py-2.5 rounded-lg text-white font-mono font-bold text-sm tracking-wider transition-all hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] cursor-pointer"
@@ -313,13 +317,123 @@ export default function App() {
           gameState={gameState}
           settings={settings}
           onUpdateSettings={setSettings}
-          onStartGame={startEncounter}
-          onRestartGame={startEncounter}
-          onReturnToMenu={() => setGameState('MENU')}
+          onStartGame={() => {
+            audio.triggerClick();
+            setShowPlatformSelector(true);
+          }}
+          onRestartGame={() => {
+            audio.triggerClick();
+            setShowPlatformSelector(true);
+          }}
+          onReturnToMenu={() => {
+            audio.triggerClick();
+            setPlayerPlatform(null);
+            setGameState('MENU');
+          }}
           fusesCollected={playerStats.fusesCollected}
           totalFuses={playerStats.totalFuses}
           completionTime={completionTime}
         />
+      )}
+
+      {/* 4b. Platform/Interface Selection Screen */}
+      {showPlatformSelector && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-[#040408]/95 backdrop-blur-xl animate-fade-in select-none">
+          {/* Subtle glowing red center flare */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(220,38,38,0.12)_0%,transparent_70%)] pointer-events-none" />
+
+          <div className="w-full max-w-2xl mx-4 bg-zinc-950/90 border-2 border-zinc-800/60 p-6 md:p-10 rounded-2xl shadow-[0_0_80px_rgba(220,38,38,0.2)] flex flex-col items-center gap-8 relative z-10">
+            {/* Corner visual tech lines */}
+            <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-red-900/40" />
+            <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-red-900/40" />
+            <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-red-900/40" />
+            <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-red-900/40" />
+
+            <div className="flex flex-col items-center text-center gap-2">
+              <span className="text-[10px] text-red-500 font-mono font-bold tracking-[0.35em] uppercase animate-pulse">
+                • SYSTEM CALIBRATION •
+              </span>
+              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase font-sans">
+                CHOOSE CONTROL PLATFORM
+              </h2>
+              <p className="text-xs text-zinc-400 max-w-md font-mono mt-1">
+                Calibrate your controller interface for the containment facility.
+              </p>
+            </div>
+
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5 mt-2">
+              {/* DESKTOP SELECTION */}
+              <button
+                onClick={() => {
+                  audio.triggerPickup();
+                  setPlayerPlatform('DESKTOP');
+                  setShowPlatformSelector(false);
+                  startEncounter();
+                }}
+                className="group relative bg-zinc-900/40 hover:bg-zinc-900/85 border border-zinc-800 hover:border-red-600/50 p-6 rounded-xl text-left transition-all duration-300 hover:scale-[1.02] active:scale-98 flex flex-col gap-4 shadow-md hover:shadow-[0_0_30px_rgba(220,38,38,0.08)] cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-lg bg-zinc-950 border border-zinc-800 group-hover:border-red-600/40 flex items-center justify-center text-zinc-400 group-hover:text-red-500 transition-colors shadow-inner">
+                  <Monitor className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-md font-bold text-white tracking-wide font-sans group-hover:text-red-400 transition-colors">
+                    DESKTOP INTERFACE
+                  </h3>
+                  <p className="text-xs text-zinc-400 font-mono mt-1.5 leading-relaxed">
+                    Optimized for desktop keyboard and mouse look. Screen remains completely clean.
+                  </p>
+                </div>
+                <div className="mt-auto border-t border-zinc-800/80 pt-3 flex flex-col gap-1 text-[10px] text-zinc-500 font-mono">
+                  <span className="text-zinc-300 font-bold">KEYS:</span>
+                  <span>• WASD / Arrow Keys: Move</span>
+                  <span>• Shift: Sprint</span>
+                  <span>• Space: Jump</span>
+                  <span>• F: Toggle Flashlight</span>
+                </div>
+              </button>
+
+              {/* MOBILE SELECTION */}
+              <button
+                onClick={() => {
+                  audio.triggerPickup();
+                  setPlayerPlatform('MOBILE');
+                  setShowPlatformSelector(false);
+                  startEncounter();
+                }}
+                className="group relative bg-zinc-900/40 hover:bg-zinc-900/85 border border-zinc-800 hover:border-red-600/50 p-6 rounded-xl text-left transition-all duration-300 hover:scale-[1.02] active:scale-98 flex flex-col gap-4 shadow-md hover:shadow-[0_0_30px_rgba(220,38,38,0.08)] cursor-pointer"
+              >
+                <div className="w-12 h-12 rounded-lg bg-zinc-950 border border-zinc-800 group-hover:border-red-600/40 flex items-center justify-center text-zinc-400 group-hover:text-red-500 transition-colors shadow-inner">
+                  <Smartphone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-md font-bold text-white tracking-wide font-sans group-hover:text-red-400 transition-colors">
+                    MOBILE INTERFACE
+                  </h3>
+                  <p className="text-xs text-zinc-400 font-mono mt-1.5 leading-relaxed">
+                    Adds virtual touch joysticks and dedicated action keys for comfortable phone play.
+                  </p>
+                </div>
+                <div className="mt-auto border-t border-zinc-800/80 pt-3 flex flex-col gap-1 text-[10px] text-zinc-500 font-mono">
+                  <span className="text-zinc-300 font-bold">CONTROLS:</span>
+                  <span>• On-Screen Touch Joystick</span>
+                  <span>• Right-Side JUMP Button</span>
+                  <span>• Quick Flashlight Toggle</span>
+                  <span>• Slide Joystick to Exit Cover</span>
+                </div>
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                audio.triggerClick();
+                setShowPlatformSelector(false);
+              }}
+              className="mt-2 text-xs font-mono text-zinc-500 hover:text-zinc-300 tracking-wider transition-colors cursor-pointer"
+            >
+              CANCEL CALIBRATION
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 5. ENCOUNTER PHASE CINEMATIC OVERLAY */}

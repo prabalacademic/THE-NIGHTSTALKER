@@ -1347,8 +1347,18 @@ export default function GameCanvas({
           }
         });
 
-        // If player pushes joystick heavily out of locker, they break exit hiding spot
-        if (pState.isInsideHidingSpot && joystickTilt > 0.5) {
+        // If player pushes joystick heavily or presses keyboard keys, they exit hiding spot
+        const wantsExitHiding = 
+          (pState.isInsideHidingSpot && joystickTilt > 0.5) ||
+          (pState.isInsideHidingSpot && (
+            keysPressed['w'] || keysPressed['arrowup'] ||
+            keysPressed['s'] || keysPressed['arrowdown'] ||
+            keysPressed['a'] || keysPressed['arrowleft'] ||
+            keysPressed['d'] || keysPressed['arrowright'] ||
+            keysPressed['space'] || keysPressed['shift']
+          ));
+
+        if (wantsExitHiding) {
           pState.isInsideHidingSpot = false;
           pState.mesh.visible = true;
           // Step out of locker slightly
