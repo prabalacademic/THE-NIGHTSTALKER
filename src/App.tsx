@@ -170,7 +170,7 @@ export default function App() {
       setWrongCount((prev) => {
         const next = prev + 1;
         if (next >= 3) {
-          setGameState('GAMEOVER');
+          handleBreakEyeContact();
         } else {
           audio.triggerAngerSting();
           // Instantly accelerate the timer to trigger the higher agitation state
@@ -215,7 +215,7 @@ export default function App() {
       const timeLeft = Math.max(0, 10 - encounterTime);
       setCrimsonCountdown(timeLeft);
       if (timeLeft <= 0) {
-        setGameState('GAMEOVER');
+        handleBreakEyeContact();
       }
     } else if (encounterTime >= 3) {
       setWrongCount((prev) => {

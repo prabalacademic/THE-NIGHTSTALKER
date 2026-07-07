@@ -157,7 +157,7 @@ export default function GameMenu({
               </h2>
               <div className="text-xs text-gray-300 space-y-3 leading-relaxed">
                 <p>
-                  You are trapped inside the <span className="text-white font-semibold">Sector 4 Facility</span>. An ancient bio-organic predator, the <span className="text-red-500 font-bold">Nightstalker</span>, is hunting you.
+                  You are trapped inside the <span className="text-white font-semibold">Black Painted Aarav Facility</span>. An ancient bio-organic predator, the <span className="text-red-500 font-bold">Nightstalker</span>, is hunting you.
                 </p>
                 <ul className="list-disc pl-5 space-y-1 text-gray-400">
                   <li><span className="text-white font-medium">Gather Objectives:</span> Find <span className="text-yellow-400 font-semibold">3 power fuses</span> rotating in deep rooms.</li>
@@ -340,7 +340,7 @@ export default function GameMenu({
             </span>
             <h2 className="text-4xl font-black text-red-600 uppercase tracking-tighter">YOU WERE CAUGHT</h2>
             <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono">
-              The Nightstalker dragged you into the darkness of Sector 4.
+              The Nightstalker dragged you into the darkness of Black Painted Aarav.
             </p>
           </div>
 
@@ -363,7 +363,7 @@ export default function GameMenu({
               className="w-full py-3.5 bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold tracking-wider uppercase rounded-lg border border-red-500 shadow-md shadow-red-950/20 transition-all flex items-center justify-center gap-2 text-sm"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>REDEPLOY IN SECTOR 4</span>
+              <span>REDEPLOY IN BLACK PAINTED AARAV</span>
             </button>
 
             <button
