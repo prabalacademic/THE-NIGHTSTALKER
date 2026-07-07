@@ -16,6 +16,8 @@ interface GameCanvasProps {
   onResetJump: () => void;
   flashlightOn: boolean;
   onToggleFlashlight: () => void;
+  wrongCount?: number;
+  correctCount?: number;
 }
 
 const TILE_SIZE = 8;
@@ -63,6 +65,8 @@ export default function GameCanvas({
   onResetJump,
   flashlightOn,
   onToggleFlashlight,
+  wrongCount = 0,
+  correctCount = 0,
 }: GameCanvasProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(gameState);
@@ -71,6 +75,11 @@ export default function GameCanvas({
   const jumpTriggeredRef = useRef(jumpTriggered);
   const flashlightRef = useRef<THREE.SpotLight | null>(null);
   const flashFlareRef = useRef<THREE.PointLight | null>(null);
+  const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const encounterSunLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const monsterEyesRef = useRef<{ left: THREE.Mesh; right: THREE.Mesh } | null>(null);
+  const resetGameRef = useRef<(() => void) | null>(null);
 
   // References for game loop parameters
   const playerRef = useRef<{
@@ -162,11 +171,144 @@ export default function GameCanvas({
   // Update refs on prop changes
   useEffect(() => {
     stateRef.current = gameState;
-    if (gameState === 'PLAYING') {
-      gameTimerRef.current.startTime = Date.now() - (gameTimerRef.current.elapsedSeconds * 1000);
+    const scene = sceneRef.current;
+    const ambientLight = ambientLightRef.current;
+    const sunLight = encounterSunLightRef.current;
+    const eyes = monsterEyesRef.current;
+    const headLight = monsterRef.current ? monsterRef.current.headLight : null;
+
+    if (gameState === 'ENCOUNTER' || gameState === 'MENU') {
+      if (resetGameRef.current) {
+        resetGameRef.current();
+      }
+      
+      const pState = playerRef.current;
+      pState.x = gridToWorldX(1);
+      pState.z = gridToWorldZ(1);
+      pState.rotationY = 0; // look straight forward at the monster
+      pState.mesh.position.set(pState.x, pState.y + 0.1, pState.z);
+      pState.mesh.visible = false; // Hide player mesh so they don't block the view of the staring monster!
+
+      const mState = monsterRef.current;
+      mState.x = gridToWorldX(1);
+      mState.z = gridToWorldZ(2.3); // standing closer in the corridor
+      mState.mesh.position.set(mState.x, 0, mState.z);
+      mState.mesh.rotation.y = Math.PI; // facing the player!
+      mState.state = 'PATROL'; // Avoid chase logic in tick
+
+      if (flashlightRef.current) flashlightRef.current.visible = false;
+      if (flashFlareRef.current) flashFlareRef.current.visible = false;
+
+      // Update lighting based on wrongCount in ENCOUNTER / MENU phase
+      if (scene && ambientLight && sunLight) {
+        sunLight.visible = true;
+        if (wrongCount === 0) {
+          scene.background = new THREE.Color(0x3e3025); // Warm ambient back
+          scene.fog = new THREE.FogExp2(0x3e3025, 0.015); // Warm sparse fog
+          ambientLight.color.setHex(0xffe0b2); // Warm gold
+          ambientLight.intensity = 1.8;
+          sunLight.color.setHex(0xfffaf0);
+          sunLight.intensity = 1.5;
+
+          if (eyes) {
+            const leftMat = eyes.left.material as THREE.MeshStandardMaterial;
+            const rightMat = eyes.right.material as THREE.MeshStandardMaterial;
+            if (leftMat && leftMat.color) leftMat.color.setHex(0x00ffd8);
+            if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0x00a0ee);
+            if (rightMat && rightMat.color) rightMat.color.setHex(0x00ffd8);
+            if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0x00a0ee);
+          }
+          if (headLight) {
+            headLight.color.setHex(0x00ffd8);
+            headLight.intensity = 3.0;
+          }
+        } else if (wrongCount === 1) {
+          scene.background = new THREE.Color(0x221a15);
+          scene.fog = new THREE.FogExp2(0x221a15, 0.03);
+          ambientLight.color.setHex(0xb08a70); // Dimmer amber
+          ambientLight.intensity = 1.2;
+          sunLight.intensity = 0.8;
+
+          if (eyes) {
+            const leftMat = eyes.left.material as THREE.MeshStandardMaterial;
+            const rightMat = eyes.right.material as THREE.MeshStandardMaterial;
+            if (leftMat && leftMat.color) leftMat.color.setHex(0xffaa00);
+            if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0xcc6600);
+            if (rightMat && rightMat.color) rightMat.color.setHex(0xffaa00);
+            if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0xcc6600);
+          }
+          if (headLight) {
+            headLight.color.setHex(0xffaa00);
+            headLight.intensity = 4.5;
+          }
+        } else if (wrongCount === 2) {
+          scene.background = new THREE.Color(0x100808);
+          scene.fog = new THREE.FogExp2(0x100808, 0.045);
+          ambientLight.color.setHex(0x602020); // Angry red dark
+          ambientLight.intensity = 0.65;
+          sunLight.intensity = 0.2;
+
+          if (eyes) {
+            const leftMat = eyes.left.material as THREE.MeshStandardMaterial;
+            const rightMat = eyes.right.material as THREE.MeshStandardMaterial;
+            if (leftMat && leftMat.color) leftMat.color.setHex(0xff0000);
+            if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0x990000);
+            if (rightMat && rightMat.color) rightMat.color.setHex(0xff0000);
+            if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0x990000);
+          }
+          if (headLight) {
+            headLight.color.setHex(0xff0000);
+            headLight.intensity = 7.0;
+          }
+        }
+      }
+      audio.resume();
+    } else if (gameState === 'PLAYING') {
+      // Transition from Encounter to playing:
+      // Make sure we set the game timers to start NOW
+      gameTimerRef.current.startTime = Date.now();
+      gameTimerRef.current.elapsedSeconds = 0;
+
+      // Restore player mesh visibility
+      const pState = playerRef.current;
+      pState.mesh.visible = true;
+
+      // Restore standard dark Backrooms horror fog and lights
+      if (scene) {
+        scene.background = new THREE.Color(0x0c0b08); // Very dark yellowish black
+        scene.fog = new THREE.FogExp2(0x0c0b08, 0.05);
+      }
+      if (ambientLight) {
+        ambientLight.color.setHex(0x12110c);
+        ambientLight.intensity = 0.35;
+      }
+      if (sunLight) {
+        sunLight.visible = false;
+      }
+      if (eyes) {
+        const leftMat = eyes.left.material as THREE.MeshStandardMaterial;
+        const rightMat = eyes.right.material as THREE.MeshStandardMaterial;
+        if (leftMat && leftMat.color) leftMat.color.setHex(0xff0000);
+        if (leftMat && leftMat.emissive) leftMat.emissive.setHex(0x990000);
+        if (rightMat && rightMat.color) rightMat.color.setHex(0xff0000);
+        if (rightMat && rightMat.emissive) rightMat.emissive.setHex(0x990000);
+      }
+      if (headLight) {
+        headLight.color.setHex(0xff0000);
+        headLight.intensity = 4.0;
+      }
+
+      // Flashlight visibility
+      if (flashlightRef.current) {
+        flashlightRef.current.visible = playerRef.current.flashlightOn;
+      }
+      if (flashFlareRef.current) {
+        flashFlareRef.current.visible = playerRef.current.flashlightOn;
+      }
+
       audio.resume();
     }
-  }, [gameState]);
+  }, [gameState, wrongCount]);
 
   useEffect(() => {
     settingsRef.current = settings;
@@ -198,6 +340,7 @@ export default function GameCanvas({
 
     // SCENE & CAMERA
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
     scene.background = new THREE.Color(0x020205);
     scene.fog = new THREE.FogExp2(0x020205, 0.05);
 
@@ -218,52 +361,71 @@ export default function GameCanvas({
     // AMBIENT LIGHT
     const ambientLight = new THREE.AmbientLight(0x040410, 0.45);
     scene.add(ambientLight);
+    ambientLightRef.current = ambientLight;
 
-    // RED CORRIDOR FLICKERING LIGHTS
-    const redLightLocs = [
+    // SUNLIGHT FOR ENCOUNTER
+    const encounterSunLight = new THREE.DirectionalLight(0xfffaf0, 1.5);
+    encounterSunLight.position.set(5, 10, 5);
+    encounterSunLight.castShadow = true;
+    scene.add(encounterSunLight);
+    encounterSunLightRef.current = encounterSunLight;
+
+    // BACKROOMS CEILING FLICKERING FLUORESCENT LIGHT PANELS
+    const lightLocs = [
       { col: 4, row: 5 },
       { col: 11, row: 11 },
-      { col: 7, row: 7 }
+      { col: 7, row: 7 },
+      { col: 1, row: 1 },
+      { col: 14, row: 14 }
     ];
     const emergencyLights: { light: THREE.PointLight; mesh: THREE.Mesh; baseIntensity: number }[] = [];
 
-    redLightLocs.forEach((loc) => {
+    lightLocs.forEach((loc) => {
       const wx = gridToWorldX(loc.col);
       const wz = gridToWorldZ(loc.row);
 
-      // Light bulb visual mesh
-      const bulbGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.4, 8);
-      const bulbMat = new THREE.MeshBasicMaterial({ color: 0xff3300 });
-      const bulb = new THREE.Mesh(bulbGeo, bulbMat);
-      bulb.position.set(wx, 4.5, wz);
-      scene.add(bulb);
+      // Elongated fluorescent light panel visual right under the ceiling
+      const panelGeo = new THREE.BoxGeometry(2.0, 0.08, 0.8);
+      const panelMat = new THREE.MeshBasicMaterial({ color: 0xfffee0 });
+      const panel = new THREE.Mesh(panelGeo, panelMat);
+      panel.position.set(wx, 4.92, wz);
+      scene.add(panel);
 
-      const pLight = new THREE.PointLight(0xff2200, 2.0, 16);
-      pLight.position.set(wx, 4.2, wz);
+      const pLight = new THREE.PointLight(0xfffeda, 1.8, 18);
+      pLight.position.set(wx, 4.6, wz);
+      pLight.castShadow = true;
       scene.add(pLight);
 
-      emergencyLights.push({ light: pLight, mesh: bulb, baseIntensity: 2.0 });
+      emergencyLights.push({ light: pLight, mesh: panel, baseIntensity: 1.8 });
     });
 
     // FLOOR PLAN
     const floorGeo = new THREE.PlaneGeometry(GRID_COLS * TILE_SIZE, GRID_ROWS * TILE_SIZE);
     
-    // Procedural Floor Texture
+    // Procedural Damp Tan Carpet Floor Texture
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.fillStyle = '#111116';
+      // Base damp carpet tan-yellowish brown
+      ctx.fillStyle = '#a6905d';
       ctx.fillRect(0, 0, 128, 128);
-      ctx.strokeStyle = '#222230';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(0, 0, 128, 128);
-      // Rust spots
-      for (let i = 0; i < 4; i++) {
-        ctx.fillStyle = `rgba(139, 69, 19, ${Math.random() * 0.15})`;
+      
+      // Fine carpet grain
+      for (let i = 0; i < 3500; i++) {
+        const x = Math.random() * 128;
+        const y = Math.random() * 128;
+        const lum = Math.random() * 12 - 6;
+        ctx.fillStyle = `rgba(${166 + lum}, ${144 + lum}, ${93 + lum}, 0.28)`;
+        ctx.fillRect(x, y, 1.5, 1.5);
+      }
+      
+      // Organic water mold stains (classic Backrooms damp carpet vibe)
+      for (let i = 0; i < 8; i++) {
+        ctx.fillStyle = `rgba(80, 68, 40, ${Math.random() * 0.22})`;
         ctx.beginPath();
-        ctx.arc(Math.random() * 128, Math.random() * 128, Math.random() * 20 + 5, 0, Math.PI * 2);
+        ctx.arc(Math.random() * 128, Math.random() * 128, Math.random() * 16 + 5, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -274,40 +436,113 @@ export default function GameCanvas({
 
     const floorMat = new THREE.MeshStandardMaterial({
       map: floorTex,
-      roughness: 0.8,
-      metalness: 0.6,
+      roughness: 0.9,
+      metalness: 0.05,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // BUILDING WALLS & OBSTACLES FROM GRID
-    const wallGeo = new THREE.BoxGeometry(TILE_SIZE, 6, TILE_SIZE);
+    // BUILDING WALLS, CEILINGS & OBSTACLES FROM GRID
+    // Procedural striped yellow-beige Backrooms wallpaper texture
+    const wallCanvas = document.createElement('canvas');
+    wallCanvas.width = 64;
+    wallCanvas.height = 128;
+    const wallCtx = wallCanvas.getContext('2d');
+    if (wallCtx) {
+      // Classic mono-yellow wallpaper base
+      wallCtx.fillStyle = '#d5c289';
+      wallCtx.fillRect(0, 0, 64, 128);
+
+      // Fine plaster noise
+      for (let i = 0; i < 1200; i++) {
+        const x = Math.random() * 64;
+        const y = Math.random() * 128;
+        const lum = Math.random() * 8 - 4;
+        wallCtx.fillStyle = `rgba(${213 + lum}, ${194 + lum}, ${137 + lum}, 0.25)`;
+        wallCtx.fillRect(x, y, 1, 1);
+      }
+
+      // Wallpaper stripes
+      wallCtx.strokeStyle = 'rgba(175, 155, 105, 0.4)';
+      wallCtx.lineWidth = 1.5;
+      wallCtx.beginPath();
+      wallCtx.moveTo(16, 0); wallCtx.lineTo(16, 128);
+      wallCtx.moveTo(32, 0); wallCtx.lineTo(32, 128);
+      wallCtx.moveTo(48, 0); wallCtx.lineTo(48, 128);
+      wallCtx.stroke();
+    }
+    const wallTex = new THREE.CanvasTexture(wallCanvas);
+    wallTex.wrapS = THREE.RepeatWrapping;
+    wallTex.wrapT = THREE.RepeatWrapping;
+    wallTex.repeat.set(1, 1);
+
+    const wallGeo = new THREE.BoxGeometry(TILE_SIZE, 5.0, TILE_SIZE);
     const wallMat = new THREE.MeshStandardMaterial({
-      color: 0x181820,
-      roughness: 0.9,
-      metalness: 0.2,
+      map: wallTex,
+      roughness: 0.85,
+      metalness: 0.05,
     });
+
+    // ACOUSTIC CEILING PANEL PLANE
+    const ceilingGeo = new THREE.PlaneGeometry(GRID_COLS * TILE_SIZE, GRID_ROWS * TILE_SIZE);
+    const ceilCanvas = document.createElement('canvas');
+    ceilCanvas.width = 128;
+    ceilCanvas.height = 128;
+    const ceilCtx = ceilCanvas.getContext('2d');
+    if (ceilCtx) {
+      // Off-white/light beige acoustic ceiling panels
+      ceilCtx.fillStyle = '#bfbaa0';
+      ceilCtx.fillRect(0, 0, 128, 128);
+      
+      // Panel borders
+      ceilCtx.strokeStyle = '#8c8872';
+      ceilCtx.lineWidth = 3;
+      ceilCtx.strokeRect(0, 0, 128, 128);
+      
+      // Noise
+      for (let i = 0; i < 1500; i++) {
+        const x = Math.random() * 128;
+        const y = Math.random() * 128;
+        const lum = Math.random() * 10 - 5;
+        ceilCtx.fillStyle = `rgba(${191 + lum}, ${186 + lum}, ${160 + lum}, 0.25)`;
+        ceilCtx.fillRect(x, y, 1, 1);
+      }
+    }
+    const ceilTex = new THREE.CanvasTexture(ceilCanvas);
+    ceilTex.wrapS = THREE.RepeatWrapping;
+    ceilTex.wrapT = THREE.RepeatWrapping;
+    ceilTex.repeat.set(GRID_COLS, GRID_ROWS);
+
+    const ceilMat = new THREE.MeshStandardMaterial({
+      map: ceilTex,
+      roughness: 0.9,
+      metalness: 0.0,
+    });
+    const ceiling = new THREE.Mesh(ceilingGeo, ceilMat);
+    ceiling.rotation.x = Math.PI / 2; // face down
+    ceiling.position.y = 5.0; // ceiling height
+    ceiling.receiveShadow = true;
+    scene.add(ceiling);
 
     const crateGeo = new THREE.BoxGeometry(TILE_SIZE * 0.75, 2.5, TILE_SIZE * 0.75);
     const crateMat = new THREE.MeshStandardMaterial({
-      color: 0x3e2723,
+      color: 0x8b7355, // cardboard box brown
       roughness: 0.9,
     });
 
-    const pillarGeo = new THREE.CylinderGeometry(1.2, 1.2, 6, 12);
+    const pillarGeo = new THREE.CylinderGeometry(1.2, 1.2, 5.0, 12);
     const pillarMat = new THREE.MeshStandardMaterial({
-      color: 0x22222a,
-      roughness: 0.7,
-      metalness: 0.4,
+      color: 0xd5c289, // columns matching walls
+      roughness: 0.85,
     });
 
-    const hidingGeo = new THREE.BoxGeometry(2, 4.5, 2.5);
+    const hidingGeo = new THREE.BoxGeometry(2, 4.2, 2.5);
     const hidingMat = new THREE.MeshStandardMaterial({
-      color: 0x1e351d, // Army green industrial locker
-      roughness: 0.5,
-      metalness: 0.8,
+      color: 0x90835f, // Office filing cabinet beige
+      roughness: 0.6,
+      metalness: 0.5,
     });
 
     // Populate Level objects
@@ -324,7 +559,7 @@ export default function GameCanvas({
         if (type === 1) {
           // Normal wall
           const wallMesh = new THREE.Mesh(wallGeo, wallMat);
-          wallMesh.position.set(wx, 3, wz);
+          wallMesh.position.set(wx, 2.5, wz);
           wallMesh.castShadow = true;
           wallMesh.receiveShadow = true;
           scene.add(wallMesh);
@@ -344,7 +579,7 @@ export default function GameCanvas({
         } else if (type === 3) {
           // Support Column
           const pillarMesh = new THREE.Mesh(pillarGeo, pillarMat);
-          pillarMesh.position.set(wx, 3, wz);
+          pillarMesh.position.set(wx, 2.5, wz);
           pillarMesh.castShadow = true;
           pillarMesh.receiveShadow = true;
           scene.add(pillarMesh);
@@ -355,15 +590,15 @@ export default function GameCanvas({
           // Interactive Hiding Spot
           const lockerGrp = new THREE.Group();
           const lockerMesh = new THREE.Mesh(hidingGeo, hidingMat);
-          lockerMesh.position.set(0, 2.25, 0);
+          lockerMesh.position.set(0, 2.1, 0);
           lockerMesh.castShadow = true;
           lockerGrp.add(lockerMesh);
 
           // Handle yellow glowing accent stripe
-          const accentGeo = new THREE.BoxGeometry(0.1, 4.0, 0.1);
+          const accentGeo = new THREE.BoxGeometry(0.1, 3.8, 0.1);
           const accentMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
           const accent = new THREE.Mesh(accentGeo, accentMat);
-          accent.position.set(1.05, 2.25, 0);
+          accent.position.set(1.05, 2.1, 0);
           lockerGrp.add(accent);
 
           lockerGrp.position.set(wx, 0, wz);
@@ -533,25 +768,104 @@ export default function GameCanvas({
     mTorso.castShadow = true;
     monsterGroup.add(mTorso);
 
-    // Beast head with red eyes
-    const mHeadGeo = new THREE.BoxGeometry(1.1, 1.1, 1.8);
-    const mHead = new THREE.Mesh(mHeadGeo, mTorsoMat);
-    mHead.position.set(0, 3.8, 0.7);
+    // Beast head with red/teal eyes (redesigned as wide sphere with spikes & large mouth like image)
+    const mHeadGeo = new THREE.SphereGeometry(1.0, 16, 16);
+    mHeadGeo.scale(1.3, 1.0, 1.0); // wide head like image
+    const mHeadMat = new THREE.MeshStandardMaterial({ color: 0x141416, roughness: 0.9 });
+    const mHead = new THREE.Mesh(mHeadGeo, mHeadMat);
+    mHead.position.set(0, 3.3, 0.7);
     monsterGroup.add(mHead);
 
-    // Glowing eyes
-    const eyeGeo = new THREE.SphereGeometry(0.2, 8, 8);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    // Conical spikes framing the head & face
+    const spikeGeo = new THREE.ConeGeometry(0.12, 0.6, 5);
+    spikeGeo.translate(0, 0.3, 0); // origin at base
+    const spikeMat = new THREE.MeshStandardMaterial({ color: 0x111113, roughness: 0.95 });
+    
+    const spikeConfigs = [
+      // Top crown spikes
+      { pos: [-0.6, 4.0, 0.7], rot: [0, 0, -Math.PI / 4] },
+      { pos: [0.6, 4.0, 0.7], rot: [0, 0, Math.PI / 4] },
+      { pos: [-0.3, 4.2, 0.7], rot: [0, 0, -Math.PI / 8] },
+      { pos: [0.3, 4.2, 0.7], rot: [0, 0, Math.PI / 8] },
+      { pos: [0.0, 4.25, 0.7], rot: [0, 0, 0] },
+      // Cheek/jaw spikes pointing outwards & downwards
+      { pos: [-1.1, 3.2, 0.7], rot: [0, 0, -Math.PI * 0.6] },
+      { pos: [1.1, 3.2, 0.7], rot: [0, 0, Math.PI * 0.6] },
+      { pos: [-1.2, 3.5, 0.7], rot: [0, 0, -Math.PI * 0.45] },
+      { pos: [1.2, 3.5, 0.7], rot: [0, 0, Math.PI * 0.45] },
+    ];
+
+    spikeConfigs.forEach((cfg) => {
+      const spike = new THREE.Mesh(spikeGeo, spikeMat);
+      spike.position.set(cfg.pos[0], cfg.pos[1], cfg.pos[2]);
+      spike.rotation.set(cfg.rot[0], cfg.rot[1], cfg.rot[2]);
+      monsterGroup.add(spike);
+    });
+
+    // Dark deep mouth backplane
+    const mouthGeo = new THREE.BoxGeometry(1.6, 0.45, 0.2);
+    const mouthMat = new THREE.MeshBasicMaterial({ color: 0x060202 });
+    const mouth = new THREE.Mesh(mouthGeo, mouthMat);
+    mouth.position.set(0, 2.7, 1.45);
+    monsterGroup.add(mouth);
+
+    // Jagged rows of sharp white teeth (cones)
+    const toothGeo = new THREE.ConeGeometry(0.045, 0.25, 4);
+    toothGeo.translate(0, -0.125, 0); // origin at base
+    const toothMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.1 });
+    
+    // Top row teeth
+    for (let i = 0; i < 11; i++) {
+      const tooth = new THREE.Mesh(toothGeo, toothMat);
+      const xOffset = -0.7 + (i * 1.4) / 10;
+      const randH = 0.8 + Math.random() * 0.4;
+      tooth.scale.set(1.0, randH, 1.0);
+      tooth.position.set(xOffset, 2.9, 1.55);
+      tooth.rotation.x = Math.PI;
+      monsterGroup.add(tooth);
+    }
+
+    // Bottom row teeth
+    const bottomToothGeo = new THREE.ConeGeometry(0.045, 0.25, 4);
+    bottomToothGeo.translate(0, 0.125, 0);
+    for (let i = 0; i < 10; i++) {
+      const tooth = new THREE.Mesh(bottomToothGeo, toothMat);
+      const xOffset = -0.63 + (i * 1.26) / 9;
+      const randH = 0.8 + Math.random() * 0.4;
+      tooth.scale.set(1.0, randH, 1.0);
+      tooth.position.set(xOffset, 2.5, 1.55);
+      monsterGroup.add(tooth);
+    }
+
+    // Glowing eyes (giant round turquoise eyes matching the image perfectly)
+    const eyeGeo = new THREE.SphereGeometry(0.38, 16, 16);
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: 0x00ffd8,
+      emissive: 0x00a0ee,
+      emissiveIntensity: 1.5,
+      roughness: 0.1,
+    });
+    
     const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
-    leftEye.position.set(-0.4, 3.8, 1.5);
+    leftEye.position.set(-0.48, 3.3, 1.4);
     const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
-    rightEye.position.set(0.4, 3.8, 1.5);
+    rightEye.position.set(0.48, 3.3, 1.4);
     monsterGroup.add(leftEye);
     monsterGroup.add(rightEye);
+    monsterEyesRef.current = { left: leftEye, right: rightEye };
 
-    // Menacing red aura glow attached to face
-    const monsterRedLight = new THREE.PointLight(0xff0000, 3.0, 12);
-    monsterRedLight.position.set(0, 3.8, 1.2);
+    // Dual eye-glow point lights to cast eerie turquoise illumination
+    const leftEyeLight = new THREE.PointLight(0x00ffd8, 2.5, 8);
+    leftEyeLight.position.set(-0.48, 3.3, 1.6);
+    monsterGroup.add(leftEyeLight);
+
+    const rightEyeLight = new THREE.PointLight(0x00ffd8, 2.5, 8);
+    rightEyeLight.position.set(0.48, 3.3, 1.6);
+    monsterGroup.add(rightEyeLight);
+
+    // Menacing aura glow attached to face
+    const monsterRedLight = new THREE.PointLight(0x00ffd8, 3.0, 12);
+    monsterRedLight.position.set(0, 3.3, 1.2);
     monsterGroup.add(monsterRedLight);
     monsterRef.current.headLight = monsterRedLight;
 
@@ -698,19 +1012,33 @@ export default function GameCanvas({
       pState.fusesCollected = 0;
       pState.isInsideHidingSpot = false;
       pState.mesh.position.set(pState.x, pState.y, pState.z);
+      pState.mesh.visible = (stateRef.current !== 'MENU' && stateRef.current !== 'ENCOUNTER');
 
       // Reset monster
       const mState = monsterRef.current;
-      mState.x = gridToWorldX(14);
-      mState.z = gridToWorldZ(14);
+      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+        mState.x = gridToWorldX(1);
+        mState.z = gridToWorldZ(2.3); // standing closer in the corridor
+      } else {
+        mState.x = gridToWorldX(14);
+        mState.z = gridToWorldZ(14);
+      }
       mState.state = 'PATROL';
       mState.patrolIndex = 0;
-      mState.targetX = gridToWorldX(14);
-      mState.targetZ = gridToWorldZ(14);
+      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+        mState.targetX = mState.x;
+        mState.targetZ = mState.z;
+      } else {
+        mState.targetX = gridToWorldX(14);
+        mState.targetZ = gridToWorldZ(14);
+      }
       mState.screechPlayed = false;
       mState.searchTimer = 0;
       mState.patrolWaitTimer = 0;
       mState.mesh.position.set(mState.x, 0, mState.z);
+      if (stateRef.current === 'MENU' || stateRef.current === 'ENCOUNTER') {
+        mState.mesh.rotation.y = Math.PI; // Face player
+      }
 
       // Reset fuses
       fusesRef.current.forEach((f) => {
@@ -729,6 +1057,7 @@ export default function GameCanvas({
       gameTimerRef.current.lastTick = 0;
     };
 
+    resetGameRef.current = resetGameParameters;
     resetGameParameters();
     audio.startAmbient();
 
@@ -736,11 +1065,26 @@ export default function GameCanvas({
       const dt = Math.min(0.03, clock.getDelta()); // Cap delta to avoid physics explosion
       const time = clock.getElapsedTime();
 
-      // Ensure emergency red lights pulse
+      // Ensure Backrooms fluorescent lights pulse and flicker realistically
       emergencyLights.forEach((el) => {
-        const pulse = el.baseIntensity + Math.sin(time * 5) * 1.2;
+        let flicker = 1.0;
+        const rand = Math.random();
+        if (rand < 0.04) {
+          flicker = 0.08; // sudden rapid blackout
+        } else if (rand < 0.07) {
+          flicker = 0.45; // quick dim flicker
+        } else {
+          // slight standard humming micro-fluctuation
+          flicker = 0.96 + Math.sin(time * 15) * 0.04;
+        }
+
+        const pulse = el.baseIntensity * flicker;
         el.light.intensity = pulse;
-        (el.mesh.material as THREE.MeshBasicMaterial).color.setHSL(0.01, 1, 0.3 + Math.sin(time * 5) * 0.1);
+
+        const meshMat = el.mesh.material as THREE.MeshBasicMaterial;
+        if (meshMat && meshMat.color) {
+          meshMat.color.setRGB(0.98 * flicker, 0.97 * flicker, 0.88 * flicker);
+        }
       });
 
       const pState = playerRef.current;
@@ -1214,22 +1558,46 @@ export default function GameCanvas({
         });
 
         onUpdateMonsterStats(mState.state, monsterDist);
+      } else if (stateRef.current === 'ENCOUNTER' || stateRef.current === 'MENU') {
+        // Creepy heavy-breathing idle animation
+        // Bobbing body up and down slowly like it is breathing heavily
+        mState.mesh.position.set(mState.x, Math.sin(time * 3.5) * 0.15, mState.z);
+        // Subtle creepy head/body tilting side to side
+        mState.mesh.rotation.z = Math.sin(time * 1.5) * 0.06;
+        // Breathing movement on the limbs
+        legs.forEach((lg, idx) => {
+          const phase = legPlacements[idx].phase;
+          lg.rotation.x = Math.sin(time * 3.5 + phase) * 0.15;
+          lg.rotation.z = Math.sin(time * 1.5 + phase) * 0.08;
+        });
+
+        // Ensure the monster always faces the player exactly
+        mState.mesh.rotation.y = Math.PI;
       }
 
       // ==========================================
-      // 6. CAMERA SMOOTH THIRD-PERSON LERP FOLLOW
+      // 6. CAMERA SMOOTH THIRD-PERSON LERP FOLLOW / CINEMATIC VIEW
       // ==========================================
-      const targetCamX = pState.x - Math.sin(pState.rotationY) * 6.5;
-      const targetCamZ = pState.z - Math.cos(pState.rotationY) * 6.5;
-      const targetCamY = pState.y + 4.2;
+      let targetCamX = pState.x - Math.sin(pState.rotationY) * 6.5;
+      let targetCamZ = pState.z - Math.cos(pState.rotationY) * 6.5;
+      let targetCamY = pState.y + 4.2;
+
+      let lookTarget = new THREE.Vector3(pState.x, pState.y + 1.2, pState.z);
+
+      if (stateRef.current === 'ENCOUNTER' || stateRef.current === 'MENU') {
+        // Look directly at the monster staring at us in the menu/encounter
+        targetCamX = pState.x;
+        targetCamZ = pState.z - 2.5; // Closer view for a direct staring face-off
+        targetCamY = pState.y + 2.4; // Perfect eye-to-eye height
+
+        lookTarget.set(mState.x, 3.2, mState.z);
+      }
 
       // Smooth camera interpolation
       camera.position.x += (targetCamX - camera.position.x) * 0.12;
       camera.position.z += (targetCamZ - camera.position.z) * 0.12;
       camera.position.y += (targetCamY - camera.position.y) * 0.12;
 
-      // Look slightly above the player head
-      const lookTarget = new THREE.Vector3(pState.x, pState.y + 1.2, pState.z);
       camera.lookAt(lookTarget);
 
       // Horror Chase camera shaking/rumble effect

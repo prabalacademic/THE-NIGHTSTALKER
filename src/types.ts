@@ -1,4 +1,4 @@
-export type GameState = 'MENU' | 'PLAYING' | 'GAMEOVER' | 'WIN' | 'PAUSED' | 'CONTROLS_INFO';
+export type GameState = 'MENU' | 'PLAYING' | 'GAMEOVER' | 'WIN' | 'PAUSED' | 'CONTROLS_INFO' | 'THE_TRUTH' | 'THE_CHASED_ONE' | 'ENCOUNTER';
 
 export interface GameSettings {
   volume: number; // 0 to 1
