@@ -19,7 +19,6 @@ interface GameCanvasProps {
   wrongCount?: number;
   correctCount?: number;
   speedBoost?: boolean;
-  hintSpeedBonus?: boolean;
 }
 
 const TILE_SIZE = 8;
@@ -70,7 +69,6 @@ export default function GameCanvas({
   wrongCount = 0,
   correctCount = 0,
   speedBoost = false,
-  hintSpeedBonus = false,
 }: GameCanvasProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(gameState);
@@ -78,7 +76,6 @@ export default function GameCanvas({
   const joystickVectorRef = useRef(joystickVector);
   const jumpTriggeredRef = useRef(jumpTriggered);
   const speedBoostRef = useRef(speedBoost);
-  const hintSpeedBonusRef = useRef(hintSpeedBonus);
   const flashlightRef = useRef<THREE.SpotLight | null>(null);
   const flashFlareRef = useRef<THREE.PointLight | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
@@ -336,8 +333,7 @@ export default function GameCanvas({
   useEffect(() => {
     jumpTriggeredRef.current = jumpTriggered;
     speedBoostRef.current = speedBoost;
-    hintSpeedBonusRef.current = hintSpeedBonus;
-  }, [jumpTriggered, speedBoost, hintSpeedBonus]);
+  }, [jumpTriggered, speedBoost]);
 
   useEffect(() => {
     playerRef.current.flashlightOn = flashlightOn;
@@ -1460,7 +1456,7 @@ export default function GameCanvas({
         if (mState.state === 'CHASE') {
           // Scale difficulty chase speed
           moveSpeed = settingsRef.current.difficulty === 'HARD' ? 6.2 : settingsRef.current.difficulty === 'EASY' ? 4.2 : 5.2;
-          if (hintSpeedBonusRef.current) moveSpeed *= 1.15;
+          moveSpeed *= 1.15;
           mState.targetX = pState.x;
           mState.targetZ = pState.z;
         } else if (mState.state === 'INVESTIGATE') {

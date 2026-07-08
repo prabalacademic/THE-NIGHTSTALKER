@@ -5,6 +5,7 @@ import GameHUD from './components/GameHUD';
 import GameMenu from './components/GameMenu';
 import VirtualJoystick from './components/VirtualJoystick';
 import StunnedAnimation from './components/StunnedAnimation';
+import FullscreenButton from './components/FullscreenButton';
 import { audio } from './utils/audio';
 import { Monitor, Smartphone } from 'lucide-react';
 
@@ -84,8 +85,6 @@ export default function App() {
   const [isGlitchingAnger, setIsGlitchingAnger] = useState(false);
   const [showStunnedAnimation, setShowStunnedAnimation] = useState(false);
   const [speedBoost, setSpeedBoost] = useState(false);
-  const [hintUsed, setHintUsed] = useState(false);
-  const [monsterSpeedBonus, setMonsterSpeedBonus] = useState(false);
 
   // Touch & Keyboard joystick direction vector
   const [joystickVector, setJoystickVector] = useState({ x: 0, y: 0 });
@@ -144,8 +143,6 @@ export default function App() {
     setIsGlitchingAnger(false);
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
-    setHintUsed(false);
-    setMonsterSpeedBonus(false);
     
     // Select a random question/riddle to solve before we can run
     const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
@@ -220,7 +217,6 @@ export default function App() {
           wrongCount={wrongCount}
           correctCount={correctCount}
           speedBoost={speedBoost}
-          hintSpeedBonus={monsterSpeedBonus}
         />
       </div>
 
@@ -529,20 +525,6 @@ export default function App() {
                   <span className="text-[9px] font-mono font-bold text-red-500 tracking-wider">
                     ⚠️ SYNAPTIC OVERRIDE RIDDLE:
                   </span>
-                  <button
-                    onClick={() => {
-                      if (hintUsed) {
-                        alert("Not supposed to do it more than one");
-                      } else {
-                        setHintUsed(true);
-                        setMonsterSpeedBonus(true);
-                        alert("Subtle hint: The answer starts with " + currentQuestion.correctAnswer[0]);
-                      }
-                    }}
-                    className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-500 transition-all ${hintUsed ? 'opacity-70' : ''}`}
-                  >
-                    HINT
-                  </button>
                 </div>
                 <p className="text-xs md:text-sm text-white font-sans font-bold leading-relaxed bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/40 text-left">
                   {currentQuestion.text}
