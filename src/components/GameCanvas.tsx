@@ -19,6 +19,7 @@ interface GameCanvasProps {
   wrongCount?: number;
   correctCount?: number;
   speedBoost?: boolean;
+  adminSpeed?: number;
 }
 
 const TILE_SIZE = 8;
@@ -69,6 +70,7 @@ export default function GameCanvas({
   wrongCount = 0,
   correctCount = 0,
   speedBoost = false,
+  adminSpeed = 1.0,
 }: GameCanvasProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(gameState);
@@ -1169,11 +1171,11 @@ export default function GameCanvas({
           // Sprint logic: shift key or high joystick tilt
           const hasStamina = pState.stamina > 2;
 
-          let currentSpeed = 3.6 * (speedBoostRef.current ? 1.5 : 1.0); // Walking base
+          let currentSpeed = 3.6 * 1.15; // Walking base
           pState.isSprinting = false;
 
           if (wantsSprint && hasStamina && (moveX !== 0 || moveZ !== 0)) {
-            currentSpeed = 7.8 * (speedBoostRef.current ? 1.2 : 1.0); // Sprint speed
+            currentSpeed = 7.8 * 1.15; // Sprint speed
             pState.isSprinting = true;
             pState.stamina = Math.max(0, pState.stamina - dt * 25); // Exhaust stamina
           } else {
@@ -1456,7 +1458,7 @@ export default function GameCanvas({
         if (mState.state === 'CHASE') {
           // Scale difficulty chase speed
           moveSpeed = settingsRef.current.difficulty === 'HARD' ? 6.2 : settingsRef.current.difficulty === 'EASY' ? 4.2 : 5.2;
-          moveSpeed *= 1.15;
+          moveSpeed *= (1.15 * adminSpeed);
           mState.targetX = pState.x;
           mState.targetZ = pState.z;
         } else if (mState.state === 'INVESTIGATE') {

@@ -16,6 +16,9 @@ interface GameMenuProps {
   fusesCollected: number;
   totalFuses: number;
   completionTime: number; // in seconds
+  isAdmin: boolean;
+  onAdminLogin: (id: string, pass: string) => void;
+  onAdjustSpeed: () => void;
 }
 
 export default function GameMenu({
@@ -28,6 +31,9 @@ export default function GameMenu({
   fusesCollected,
   totalFuses,
   completionTime,
+  isAdmin,
+  onAdminLogin,
+  onAdjustSpeed,
 }: GameMenuProps) {
   const [activeTab, setActiveTab] = useState<'MAIN' | 'HOWTO' | 'DOSSIER' | 'SETTINGS'>('MAIN');
   const [glitchText, setGlitchText] = useState('NIGHTSTALKER');
@@ -94,7 +100,7 @@ export default function GameMenu({
             </svg>
 
             <span className="text-[10px] text-red-600 font-mono font-bold tracking-[0.4em] uppercase mb-1">
-              • CHASE AND SURVIVE •
+              • GET CHASED AND SURVIVE •
             </span>
             <h1
               id="game-logo"
@@ -117,7 +123,7 @@ export default function GameMenu({
                 className="w-full py-4 bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold tracking-widest uppercase rounded-lg border border-red-500 shadow-lg shadow-red-950/40 transition-all flex items-center justify-center gap-2 text-sm"
               >
                 <Play className="w-5 h-5 fill-current" />
-                <span>START ESCAPE</span>
+                <span>START GAME</span>
               </button>
 
               <button
@@ -146,6 +152,28 @@ export default function GameMenu({
                 <Volume2 className="w-4 h-4" />
                 <span>SETTINGS</span>
               </button>
+              
+              <button
+                onClick={() => {
+                  const id = prompt("Enter ID:");
+                  const pass = prompt("Enter Password:");
+                  if (id && pass) {
+                    onAdminLogin(id, pass);
+                  }
+                }}
+                className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-yellow-500 font-bold tracking-wider uppercase rounded-lg border border-yellow-500/20 transition-all flex items-center justify-center gap-2 text-xs"
+              >
+                <span>ADMIN LOGIN</span>
+              </button>
+
+              {isAdmin && (
+                <button
+                  onClick={onAdjustSpeed}
+                  className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-purple-500 font-bold tracking-wider uppercase rounded-lg border border-purple-500/20 transition-all flex items-center justify-center gap-2 text-xs"
+                >
+                  <span>ADJUST SPEED</span>
+                </button>
+              )}
             </div>
           )}
 

@@ -7,7 +7,7 @@ import VirtualJoystick from './components/VirtualJoystick';
 import StunnedAnimation from './components/StunnedAnimation';
 import FullscreenButton from './components/FullscreenButton';
 import { audio } from './utils/audio';
-import { Monitor, Smartphone } from 'lucide-react';
+import { Monitor, Smartphone, Lightbulb } from 'lucide-react';
 
 interface Question {
   text: string;
@@ -84,7 +84,10 @@ export default function App() {
   const [correctCount, setCorrectCount] = useState(0);
   const [isGlitchingAnger, setIsGlitchingAnger] = useState(false);
   const [showStunnedAnimation, setShowStunnedAnimation] = useState(false);
-  const [speedBoost, setSpeedBoost] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [hintText, setHintText] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminSpeed, setAdminSpeed] = useState(1.0);
 
   // Touch & Keyboard joystick direction vector
   const [joystickVector, setJoystickVector] = useState({ x: 0, y: 0 });
@@ -140,6 +143,8 @@ export default function App() {
 
   const startEncounter = () => {
     setWrongCount(0);
+    setHintUsed(false);
+    setHintText('');
     setIsGlitchingAnger(false);
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
@@ -216,7 +221,7 @@ export default function App() {
           onToggleFlashlight={handleToggleFlashlight}
           wrongCount={wrongCount}
           correctCount={correctCount}
-          speedBoost={speedBoost}
+          adminSpeed={adminSpeed}
         />
       </div>
 
@@ -333,6 +338,25 @@ export default function App() {
           fusesCollected={playerStats.fusesCollected}
           totalFuses={playerStats.totalFuses}
           completionTime={completionTime}
+          isAdmin={isAdmin}
+          onAdminLogin={(id, pass) => {
+            const adminData = {
+              "shreshth": "makemeanadmin",
+              "shiven": "shivenjaswalispro",
+              "arnav": "iamarnavia"
+            };
+            // @ts-ignore
+            if (adminData[id] === pass) {
+              setIsAdmin(true);
+              alert("Admin Access Granted");
+            } else {
+              alert("Access Denied");
+            }
+          }}
+          onAdjustSpeed={() => {
+            const newSpeed = parseFloat(prompt("Enter Speed Factor (e.g., 1.5):", adminSpeed.toString()) || "1.0");
+            setAdminSpeed(newSpeed);
+          }}
         />
       )}
 
@@ -559,6 +583,34 @@ export default function App() {
           </div>
         </div>
       )}
+      {gameState === 'ENCOUNTER' && (
+        <>
+          {hintText && (
+            <div className="fixed top-10 left-0 w-full text-center z-[1000] text-xl text-orange-500 font-bold p-2 animate-fade-in pointer-events-none">
+              {hintText}
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (hintUsed) {
+                alert("Not supposed to do it more than one");
+              } else if (currentQuestion) {
+                setHintUsed(true);
+                setHintText("Subtle hint: The answer starts with " + currentQuestion.correctAnswer[0]);
+                setTimeout(() => setHintText(''), 5000); // Display for 5 seconds
+              }
+            }}
+            className={`fixed bottom-20 right-6 z-[200] w-14 h-14 rounded-full border border-orange-500/50 bg-orange-500/10 backdrop-blur-sm flex items-center justify-center text-orange-500 transition-all hover:bg-orange-500/20 ${hintUsed ? 'opacity-70' : ''}`}
+          >
+            <Lightbulb className="w-8 h-8" />
+          </button>
+        </>
+      )}
+
+      {/* Fullscreen Button */}
+      <FullscreenButton />
+
     </div>
   );
 }
