@@ -19,6 +19,7 @@ interface GameMenuProps {
   isAdmin: boolean;
   onAdminLogin: (id: string, pass: string) => void;
   onAdjustSpeed: () => void;
+  onLogout: () => void;
 }
 
 export default function GameMenu({
@@ -34,6 +35,7 @@ export default function GameMenu({
   isAdmin,
   onAdminLogin,
   onAdjustSpeed,
+  onLogout,
 }: GameMenuProps) {
   const [activeTab, setActiveTab] = useState<'MAIN' | 'HOWTO' | 'DOSSIER' | 'SETTINGS'>('MAIN');
   const [glitchText, setGlitchText] = useState('NIGHTSTALKER');
@@ -172,6 +174,14 @@ export default function GameMenu({
                   className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-purple-500 font-bold tracking-wider uppercase rounded-lg border border-purple-500/20 transition-all flex items-center justify-center gap-2 text-xs"
                 >
                   <span>ADJUST SPEED</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={onLogout}
+                  className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-red-500 font-bold tracking-wider uppercase rounded-lg border border-red-500/20 transition-all flex items-center justify-center gap-2 text-xs"
+                >
+                  <span>LOGOUT</span>
                 </button>
               )}
             </div>

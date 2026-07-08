@@ -357,6 +357,10 @@ export default function App() {
             const newSpeed = parseFloat(prompt("Enter Speed Factor (e.g., 1.5):", adminSpeed.toString()) || "1.0");
             setAdminSpeed(newSpeed);
           }}
+          onLogout={() => {
+            setIsAdmin(false);
+            setAdminSpeed(1.0);
+          }}
         />
       )}
 
