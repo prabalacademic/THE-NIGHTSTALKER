@@ -18,6 +18,8 @@ interface GameCanvasProps {
   onToggleFlashlight: () => void;
   wrongCount?: number;
   correctCount?: number;
+  speedBoost?: boolean;
+  hintSpeedBonus?: boolean;
 }
 
 const TILE_SIZE = 8;
@@ -67,12 +69,16 @@ export default function GameCanvas({
   onToggleFlashlight,
   wrongCount = 0,
   correctCount = 0,
+  speedBoost = false,
+  hintSpeedBonus = false,
 }: GameCanvasProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef(gameState);
   const settingsRef = useRef(settings);
   const joystickVectorRef = useRef(joystickVector);
   const jumpTriggeredRef = useRef(jumpTriggered);
+  const speedBoostRef = useRef(speedBoost);
+  const hintSpeedBonusRef = useRef(hintSpeedBonus);
   const flashlightRef = useRef<THREE.SpotLight | null>(null);
   const flashFlareRef = useRef<THREE.PointLight | null>(null);
   const ambientLightRef = useRef<THREE.AmbientLight | null>(null);
@@ -329,7 +335,9 @@ export default function GameCanvas({
 
   useEffect(() => {
     jumpTriggeredRef.current = jumpTriggered;
-  }, [jumpTriggered]);
+    speedBoostRef.current = speedBoost;
+    hintSpeedBonusRef.current = hintSpeedBonus;
+  }, [jumpTriggered, speedBoost, hintSpeedBonus]);
 
   useEffect(() => {
     playerRef.current.flashlightOn = flashlightOn;
@@ -1165,11 +1173,11 @@ export default function GameCanvas({
           // Sprint logic: shift key or high joystick tilt
           const hasStamina = pState.stamina > 2;
 
-          let currentSpeed = 3.6; // Walking base
+          let currentSpeed = 3.6 * (speedBoostRef.current ? 1.5 : 1.0); // Walking base
           pState.isSprinting = false;
 
           if (wantsSprint && hasStamina && (moveX !== 0 || moveZ !== 0)) {
-            currentSpeed = 7.8; // Sprint speed
+            currentSpeed = 7.8 * (speedBoostRef.current ? 1.2 : 1.0); // Sprint speed
             pState.isSprinting = true;
             pState.stamina = Math.max(0, pState.stamina - dt * 25); // Exhaust stamina
           } else {
@@ -1452,6 +1460,7 @@ export default function GameCanvas({
         if (mState.state === 'CHASE') {
           // Scale difficulty chase speed
           moveSpeed = settingsRef.current.difficulty === 'HARD' ? 6.2 : settingsRef.current.difficulty === 'EASY' ? 4.2 : 5.2;
+          if (hintSpeedBonusRef.current) moveSpeed *= 1.15;
           mState.targetX = pState.x;
           mState.targetZ = pState.z;
         } else if (mState.state === 'INVESTIGATE') {

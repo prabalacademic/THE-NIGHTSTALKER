@@ -4,6 +4,7 @@ import GameCanvas from './components/GameCanvas';
 import GameHUD from './components/GameHUD';
 import GameMenu from './components/GameMenu';
 import VirtualJoystick from './components/VirtualJoystick';
+import StunnedAnimation from './components/StunnedAnimation';
 import { audio } from './utils/audio';
 import { Monitor, Smartphone } from 'lucide-react';
 
@@ -81,6 +82,10 @@ export default function App() {
   const [wrongCount, setWrongCount] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [isGlitchingAnger, setIsGlitchingAnger] = useState(false);
+  const [showStunnedAnimation, setShowStunnedAnimation] = useState(false);
+  const [speedBoost, setSpeedBoost] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [monsterSpeedBonus, setMonsterSpeedBonus] = useState(false);
 
   // Touch & Keyboard joystick direction vector
   const [joystickVector, setJoystickVector] = useState({ x: 0, y: 0 });
@@ -107,9 +112,10 @@ export default function App() {
 
   const handleTrackCompletionTime = (secs: number) => {
     setCompletionTime(secs);
-    // Survive 5 continuous minutes (300 seconds) in chase to get THE_CHASED_ONE ending!
-    if (gameState === 'PLAYING' && secs >= 300) {
-      setGameState('THE_CHASED_ONE');
+    // Survive 3 continuous minutes (180 seconds) in chase to get THE_CHASED_ONE ending!
+    if (gameState === 'PLAYING' && secs >= 180 && !showStunnedAnimation) {
+      setShowStunnedAnimation(true);
+      setSpeedBoost(true);
     }
   };
 
@@ -138,6 +144,8 @@ export default function App() {
     setIsGlitchingAnger(false);
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
+    setHintUsed(false);
+    setMonsterSpeedBonus(false);
     
     // Select a random question/riddle to solve before we can run
     const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
@@ -211,8 +219,18 @@ export default function App() {
           onToggleFlashlight={handleToggleFlashlight}
           wrongCount={wrongCount}
           correctCount={correctCount}
+          speedBoost={speedBoost}
+          hintSpeedBonus={monsterSpeedBonus}
         />
       </div>
+
+      {showStunnedAnimation && (
+        <StunnedAnimation onComplete={() => {
+          setShowStunnedAnimation(false);
+          setSpeedBoost(false);
+          setGameState('THE_CHASED_ONE');
+        }} />
+      )}
 
       {/* 2. Interactive Game HUD overlay (Active when playing) */}
       {gameState === 'PLAYING' && (
@@ -507,9 +525,25 @@ export default function App() {
             {/* Riddle Question Block */}
             {currentQuestion && (
               <div className="flex flex-col gap-2 relative z-10 border-t border-b border-zinc-800/80 py-3 mt-1">
-                <span className="text-[9px] font-mono font-bold text-red-500 tracking-wider">
-                  ⚠️ SYNAPTIC OVERRIDE RIDDLE:
-                </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-mono font-bold text-red-500 tracking-wider">
+                    ⚠️ SYNAPTIC OVERRIDE RIDDLE:
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (hintUsed) {
+                        alert("Not supposed to do it more than one");
+                      } else {
+                        setHintUsed(true);
+                        setMonsterSpeedBonus(true);
+                        alert("Subtle hint: The answer starts with " + currentQuestion.correctAnswer[0]);
+                      }
+                    }}
+                    className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-500 transition-all ${hintUsed ? 'opacity-70' : ''}`}
+                  >
+                    HINT
+                  </button>
+                </div>
                 <p className="text-xs md:text-sm text-white font-sans font-bold leading-relaxed bg-zinc-900/50 p-3 rounded-lg border border-zinc-800/40 text-left">
                   {currentQuestion.text}
                 </p>
