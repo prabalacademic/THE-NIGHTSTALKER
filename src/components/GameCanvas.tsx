@@ -1175,7 +1175,7 @@ export default function GameCanvas({
           pState.isSprinting = false;
 
           if (wantsSprint && hasStamina && (moveX !== 0 || moveZ !== 0)) {
-            currentSpeed = 7.8 * adminSpeed; // Sprint speed
+            currentSpeed = 8.5 * adminSpeed; // Sprint speed
             pState.isSprinting = true;
             pState.stamina = Math.max(0, pState.stamina - dt * 25); // Exhaust stamina
           } else {
@@ -1457,7 +1457,7 @@ export default function GameCanvas({
         let moveSpeed = mState.speed;
         if (mState.state === 'CHASE') {
           // Scale difficulty chase speed
-          moveSpeed = settingsRef.current.difficulty === 'HARD' ? 6.2 : settingsRef.current.difficulty === 'EASY' ? 4.2 : 5.2;
+          moveSpeed = settingsRef.current.difficulty === 'HARD' ? 5.5 : settingsRef.current.difficulty === 'EASY' ? 3.5 : 4.5;
           moveSpeed *= (1.15 * adminSpeed);
           mState.targetX = pState.x;
           mState.targetZ = pState.z;
