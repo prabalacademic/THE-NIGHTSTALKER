@@ -39,6 +39,7 @@ export default function GameMenu({
 }: GameMenuProps) {
   const [activeTab, setActiveTab] = useState<'MAIN' | 'HOWTO' | 'DOSSIER' | 'SETTINGS'>('MAIN');
   const [showModes, setShowModes] = useState(false);
+  const [showLobby, setShowLobby] = useState(false);
   const [glitchText, setGlitchText] = useState('NIGHTSTALKER');
 
   // Text glitch effect on the horror title
@@ -130,6 +131,23 @@ export default function GameMenu({
                   <span>START GAME</span>
                 </button>
               ) : (
+                showLobby ? (
+                <div className="flex flex-col gap-3 p-4 bg-zinc-900 rounded-lg border border-red-900/50">
+                  <h3 className="text-white text-sm font-bold text-center">WAITING FOR PLAYERS...</h3>
+                  <button 
+                    onClick={() => { /* Real multiplayer logic would be here */ }}
+                    className="w-full py-2 bg-green-600 text-white rounded font-bold"
+                  >
+                    AGREE TO PLAY
+                  </button>
+                  <button 
+                    onClick={() => setShowLobby(false)}
+                    className="w-full py-2 bg-zinc-700 text-white rounded"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              ) : (
                 /* Mode Selection */
                 <div className="flex gap-2">
                   <button
@@ -140,13 +158,14 @@ export default function GameMenu({
                     <span>SINGLEPLAYER</span>
                   </button>
                   <button
-                    onClick={() => { /* TODO: Multiplayer Lobby */ alert("Multiplayer coming soon"); }}
+                    onClick={() => { setShowLobby(true); }}
                     className="flex-1 py-4 bg-gray-950/60 hover:bg-gray-900/60 text-white font-bold tracking-widest uppercase rounded-lg border border-white/10 transition-all flex items-center justify-center gap-2 text-xs"
                   >
                     <Shield className="w-4 h-4 fill-current" />
                     <span>MULTIPLAYER</span>
                   </button>
                 </div>
+              )
               )}
 
               <button
