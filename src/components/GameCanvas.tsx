@@ -1171,11 +1171,11 @@ export default function GameCanvas({
           // Sprint logic: shift key or high joystick tilt
           const hasStamina = pState.stamina > 2;
 
-          let currentSpeed = 3.6 * (1.15 * adminSpeed); // Walking base
+          let currentSpeed = 3.6 * adminSpeed; // Walking base
           pState.isSprinting = false;
 
           if (wantsSprint && hasStamina && (moveX !== 0 || moveZ !== 0)) {
-            currentSpeed = 7.8 * (1.15 * adminSpeed); // Sprint speed
+            currentSpeed = 7.8 * adminSpeed; // Sprint speed
             pState.isSprinting = true;
             pState.stamina = Math.max(0, pState.stamina - dt * 25); // Exhaust stamina
           } else {

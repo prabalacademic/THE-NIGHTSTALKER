@@ -38,6 +38,7 @@ export default function GameMenu({
   onLogout,
 }: GameMenuProps) {
   const [activeTab, setActiveTab] = useState<'MAIN' | 'HOWTO' | 'DOSSIER' | 'SETTINGS'>('MAIN');
+  const [showModes, setShowModes] = useState(false);
   const [glitchText, setGlitchText] = useState('NIGHTSTALKER');
 
   // Text glitch effect on the horror title
@@ -119,14 +120,34 @@ export default function GameMenu({
           {/* Navigation Area */}
           {activeTab === 'MAIN' && (
             <div className="w-full flex flex-col gap-3">
-              <button
-                onClick={onStartGame}
-                id="btn-play-game"
-                className="w-full py-4 bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold tracking-widest uppercase rounded-lg border border-red-500 shadow-lg shadow-red-950/40 transition-all flex items-center justify-center gap-2 text-sm"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>START GAME</span>
-              </button>
+              {!showModes ? (
+                <button
+                  onClick={() => setShowModes(true)}
+                  id="btn-play-game"
+                  className="w-full py-4 bg-red-600 hover:bg-red-500 active:scale-98 text-white font-bold tracking-widest uppercase rounded-lg border border-red-500 shadow-lg shadow-red-950/40 transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  <span>START GAME</span>
+                </button>
+              ) : (
+                /* Mode Selection */
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onStartGame()}
+                    className="flex-1 py-4 bg-red-600 hover:bg-red-500 text-white font-bold tracking-widest uppercase rounded-lg border border-red-500 shadow-lg shadow-red-950/40 transition-all flex items-center justify-center gap-2 text-xs"
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>SINGLEPLAYER</span>
+                  </button>
+                  <button
+                    onClick={() => { /* TODO: Multiplayer Lobby */ alert("Multiplayer coming soon"); }}
+                    className="flex-1 py-4 bg-gray-950/60 hover:bg-gray-900/60 text-white font-bold tracking-widest uppercase rounded-lg border border-white/10 transition-all flex items-center justify-center gap-2 text-xs"
+                  >
+                    <Shield className="w-4 h-4 fill-current" />
+                    <span>MULTIPLAYER</span>
+                  </button>
+                </div>
+              )}
 
               <button
                 onClick={() => setActiveTab('HOWTO')}
@@ -136,7 +157,6 @@ export default function GameMenu({
                 <Info className="w-4 h-4" />
                 <span>HOW TO PLAY</span>
               </button>
-
               <button
                 onClick={() => setActiveTab('DOSSIER')}
                 id="btn-menu-dossier"
@@ -146,27 +166,21 @@ export default function GameMenu({
                 <span>MONSTER DOSSIER</span>
               </button>
 
-              <button
-                onClick={() => setActiveTab('SETTINGS')}
-                id="btn-menu-settings"
-                className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-gray-300 font-bold tracking-wider uppercase rounded-lg border border-white/5 transition-all flex items-center justify-center gap-2 text-xs"
-              >
-                <Volume2 className="w-4 h-4" />
-                <span>SETTINGS</span>
-              </button>
-              
-              <button
-                onClick={() => {
-                  const id = prompt("Enter ID:");
-                  const pass = prompt("Enter Password:");
-                  if (id && pass) {
-                    onAdminLogin(id, pass);
-                  }
-                }}
-                className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-yellow-500 font-bold tracking-wider uppercase rounded-lg border border-yellow-500/20 transition-all flex items-center justify-center gap-2 text-xs"
-              >
-                <span>ADMIN LOGIN</span>
-              </button>
+
+              {!isAdmin && (
+                <button
+                  onClick={() => {
+                    const id = prompt("Enter ID:");
+                    const pass = prompt("Enter Password:");
+                    if (id && pass) {
+                      onAdminLogin(id, pass);
+                    }
+                  }}
+                  className="w-full py-3.5 bg-gray-950/60 hover:bg-gray-900/60 text-yellow-500 font-bold tracking-wider uppercase rounded-lg border border-yellow-500/20 transition-all flex items-center justify-center gap-2 text-xs"
+                >
+                  <span>ADMIN LOGIN</span>
+                </button>
+              )}
 
               {isAdmin && (
                 <button

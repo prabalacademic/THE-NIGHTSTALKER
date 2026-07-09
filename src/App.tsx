@@ -84,6 +84,7 @@ export default function App() {
   const [correctCount, setCorrectCount] = useState(0);
   const [isGlitchingAnger, setIsGlitchingAnger] = useState(false);
   const [showStunnedAnimation, setShowStunnedAnimation] = useState(false);
+  const [speedBoost, setSpeedBoost] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
   const [hintText, setHintText] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
