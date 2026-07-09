@@ -26,7 +26,7 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
   const isPortalUnlocked = playerStats.fusesCollected >= playerStats.totalFuses;
 
   return (
-    <div className={`absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-6 transition-opacity duration-300 ${
+    <div className={`absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-4 sm:p-6 transition-opacity duration-300 ${
       monsterState === 'CHASE' && proximityIntensity > 0.7 ? 'opacity-95' : 'opacity-100'
     }`}>
       {/* 1. Immersive Tension Vignette (Pulses & closes in based on proximity) */}
@@ -75,29 +75,29 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
       {/* 2. Top Bar: Title & Core Objectives */}
       <div className="w-full flex justify-between items-start z-10">
         {/* Left: Objectives */}
-        <div className="bg-black/75 border border-white/10 p-3 rounded-lg backdrop-blur-md shadow-lg flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded bg-yellow-500/10 text-yellow-500 ${isPortalUnlocked ? 'animate-bounce bg-emerald-500/10 text-emerald-400' : ''}`}>
-              <Key className="w-5 h-5" />
+        <div className="bg-black/75 border border-white/10 p-2 sm:p-3 rounded-lg backdrop-blur-md shadow-lg flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className={`p-1 rounded sm:p-1.5 bg-yellow-500/10 text-yellow-500 ${isPortalUnlocked ? 'animate-bounce bg-emerald-500/10 text-emerald-400' : ''}`}>
+              <Key className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Objectives</div>
-              <div className="text-sm font-bold font-mono text-white">
+              <div className="text-[8px] sm:text-[10px] text-gray-400 font-mono uppercase tracking-wider">Objectives</div>
+              <div className="text-xs sm:text-sm font-bold font-mono text-white">
                 Fuses: <span className={isPortalUnlocked ? 'text-emerald-400' : 'text-yellow-400'}>{playerStats.fusesCollected}</span> / {playerStats.totalFuses}
               </div>
             </div>
           </div>
 
-          <div className="h-8 w-[1px] bg-white/10" />
+          <div className="h-6 sm:h-8 w-[1px] bg-white/10" />
 
           {/* Player status/score or extra */}
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded bg-blue-500/10 text-blue-400">
-              <Activity className="w-5 h-5" />
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="p-1 rounded sm:p-1.5 bg-blue-500/10 text-blue-400">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <div className="text-[10px] text-gray-400 font-mono uppercase tracking-wider">Stamina</div>
-              <div className="text-sm font-bold font-mono text-white">{Math.round(staminaPercent)}%</div>
+              <div className="text-[8px] sm:text-[10px] text-gray-400 font-mono uppercase tracking-wider">Stamina</div>
+              <div className="text-xs sm:text-sm font-bold font-mono text-white">{Math.round(staminaPercent)}%</div>
             </div>
           </div>
         </div>
@@ -160,15 +160,15 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
       </div>
 
       {/* 3. Center Guidance Overlay (Shows instruction notifications) */}
-      <div className="w-full flex justify-center items-center flex-1 my-4 z-10">
+      <div className="w-full flex justify-center items-center flex-1 my-2 sm:my-4 z-10">
         {isPortalUnlocked ? (
-          <div className="bg-emerald-950/90 border border-emerald-500 px-6 py-3 rounded-xl backdrop-blur-md shadow-2xl shadow-emerald-900/40 text-center animate-pulse max-w-sm pointer-events-auto">
-            <h3 className="text-emerald-400 font-bold tracking-wider uppercase text-sm">EXIT PORTAL ONLINE</h3>
-            <p className="text-white text-xs mt-1">All fuses gathered! Locate the glowing green escape portal quickly!</p>
+          <div className="bg-emerald-950/90 border border-emerald-500 px-4 py-2 sm:px-6 sm:py-3 rounded-xl backdrop-blur-md shadow-2xl shadow-emerald-900/40 text-center animate-pulse max-w-[90vw] sm:max-w-sm pointer-events-auto">
+            <h3 className="text-emerald-400 font-bold tracking-wider uppercase text-xs sm:text-sm">EXIT PORTAL ONLINE</h3>
+            <p className="text-white text-[10px] sm:text-xs mt-1">All fuses gathered! Locate the glowing green escape portal quickly!</p>
           </div>
         ) : playerStats.fusesCollected === 0 ? (
-          <div className="bg-black/60 border border-white/5 px-4 py-2 rounded-full backdrop-blur-sm text-center max-w-xs animate-fade-in">
-            <p className="text-gray-300 text-xs font-medium">Find 3 fuses hidden in the dark sectors.</p>
+          <div className="bg-black/60 border border-white/5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full backdrop-blur-sm text-center max-w-[90vw] sm:max-w-xs animate-fade-in">
+            <p className="text-gray-300 text-[10px] sm:text-xs font-medium">Find 3 fuses hidden in the dark sectors.</p>
           </div>
         ) : null}
       </div>
