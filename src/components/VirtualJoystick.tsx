@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Compass, Lightbulb, LightbulbOff, ArrowUp, LogOut } from 'lucide-react';
+import { Compass, Lightbulb, LightbulbOff, ArrowUp, LogOut, Zap } from 'lucide-react';
 
 interface VirtualJoystickProps {
   onMove: (vector: { x: number; y: number }) => void;
@@ -8,6 +8,8 @@ interface VirtualJoystickProps {
   onToggleFlashlight: () => void;
   isHiding: boolean;
   onExitHiding?: () => void;
+  isSprinting: boolean;
+  onSprintToggle: () => void;
 }
 
 export default function VirtualJoystick({
@@ -17,6 +19,8 @@ export default function VirtualJoystick({
   onToggleFlashlight,
   isHiding,
   onExitHiding,
+  isSprinting,
+  onSprintToggle,
 }: VirtualJoystickProps) {
   const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -229,6 +233,20 @@ export default function VirtualJoystick({
           title="Toggle Flashlight (F)"
         >
           {flashlightOn ? <Lightbulb className="w-5 h-5" /> : <LightbulbOff className="w-5 h-5" />}
+        </button>
+
+        {/* Sprint Button */}
+        <button
+          onClick={onSprintToggle}
+          id="btn-toggle-sprint"
+          className={`w-12 h-12 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-sm transition-all active:scale-90 shadow-md ${
+            isSprinting
+              ? 'bg-red-500/20 text-red-400 border-red-400/50 shadow-red-500/10'
+              : 'bg-black/40 text-gray-400'
+          }`}
+          title="Toggle Sprint (Shift)"
+        >
+          <Zap className="w-5 h-5" />
         </button>
 
         {/* Jump Button */}

@@ -26,7 +26,7 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
   const isPortalUnlocked = playerStats.fusesCollected >= playerStats.totalFuses;
 
   return (
-    <div className={`absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-4 sm:p-6 transition-opacity duration-300 ${
+    <div className={`absolute inset-0 pointer-events-none select-none z-10 flex flex-col justify-between p-2 sm:p-4 md:p-6 transition-opacity duration-300 ${
       monsterState === 'CHASE' && proximityIntensity > 0.7 ? 'opacity-95' : 'opacity-100'
     }`}>
       {/* 1. Immersive Tension Vignette (Pulses & closes in based on proximity) */}

@@ -131,6 +131,13 @@ export default function App() {
     setJumpTriggered(true);
   };
 
+  const handleSprintToggle = () => {
+    setPlayerStats((prev) => ({
+      ...prev,
+      isSprinting: !prev.isSprinting,
+    }));
+  };
+
   const handleResetJump = () => {
     setJumpTriggered(false);
   };
@@ -204,7 +211,7 @@ export default function App() {
   }, [gameState, currentQuestion]);
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden flex flex-col justify-center select-none">
+    <div className="relative w-screen h-dvh bg-black overflow-hidden flex flex-col justify-center select-none">
       {/* 1. Main 3D Canvas rendering underlay */}
       <div className="absolute inset-0 w-full h-full z-0">
         <GameCanvas
@@ -255,6 +262,8 @@ export default function App() {
           flashlightOn={playerStats.flashlightOn}
           onToggleFlashlight={handleToggleFlashlight}
           isHiding={playerStats.isInsideHidingSpot}
+          isSprinting={playerStats.isSprinting}
+          onSprintToggle={handleSprintToggle}
         />
       )}
 
