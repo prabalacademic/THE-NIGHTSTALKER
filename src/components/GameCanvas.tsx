@@ -927,8 +927,8 @@ export default function GameCanvas({
     };
     window.addEventListener('resize', handleResize);
 
-    // ==========================================
     // GRID PATHFINDING FOR MONSTER (BFS)
+
     // ==========================================
     const findShortestGridPath = (
       startR: number,
