@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from './lib/firebase';
 import { GameState, GameSettings, PlayerStats, MonsterState } from './types';
 import GameCanvas from './components/GameCanvas';
 import GameHUD from './components/GameHUD';
 import GameMenu from './components/GameMenu';
 import VirtualJoystick from './components/VirtualJoystick';
+import AuthModal from './components/AuthModal';
 import StunnedAnimation from './components/StunnedAnimation';
 import FullscreenButton from './components/FullscreenButton';
 import { audio } from './utils/audio';
@@ -94,6 +96,13 @@ export default function App() {
   const [joystickVector, setJoystickVector] = useState({ x: 0, y: 0 });
   const [jumpTriggered, setJumpTriggered] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((u) => setUser(u));
+    return () => unsubscribe();
+  }, []);
 
   // Callbacks from GameCanvas
   const handleUpdatePlayerStats = (stats: PlayerStats) => {
@@ -251,6 +260,8 @@ export default function App() {
             audio.triggerClick();
             setShowLeaveConfirmation(true);
           }}
+          user={user}
+          onSignInClick={() => setShowAuthModal(true)}
         />
       )}
 
@@ -268,6 +279,13 @@ export default function App() {
       )}
 
       {/* Leave Confirmation Overlay Modal */}
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => {}}
+        />
+      )}
+
       {gameState === 'PLAYING' && showLeaveConfirmation && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in">
           <div className="w-full max-w-sm mx-4 bg-zinc-950/90 border-2 border-red-900/40 p-8 rounded-xl shadow-[0_0_50px_rgba(220,38,38,0.15)] flex flex-col items-center text-center gap-6 relative">

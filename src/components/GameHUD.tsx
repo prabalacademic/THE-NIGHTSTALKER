@@ -7,9 +7,11 @@ interface GameHUDProps {
   monsterState: MonsterState;
   monsterDistance: number;
   onLeaveClick: () => void;
+  user: any;
+  onSignInClick: () => void;
 }
 
-export default function GameHUD({ playerStats, monsterState, monsterDistance, onLeaveClick }: GameHUDProps) {
+export default function GameHUD({ playerStats, monsterState, monsterDistance, onLeaveClick, user, onSignInClick }: GameHUDProps) {
   const staminaPercent = Math.max(0, Math.min(100, playerStats.stamina));
   
   // Calculate proximity intensity
@@ -134,6 +136,18 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
 
         {/* Right: State / Danger level indicators */}
         <div className="flex flex-col items-end gap-2">
+          {user ? (
+            <div className="bg-black/50 border border-white/10 px-3 py-1 rounded text-white text-xs font-mono">
+              {user.displayName || user.email}
+            </div>
+          ) : (
+            <button
+              onClick={onSignInClick}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold uppercase tracking-wider"
+            >
+              Sign In
+            </button>
+          )}
           {monsterState === 'CHASE' ? (
             <div className="bg-red-950/80 border border-red-600 px-4 py-2 rounded-lg backdrop-blur-md flex items-center gap-2 shadow-lg animate-bounce">
               <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
