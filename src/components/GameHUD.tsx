@@ -137,13 +137,13 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
         {/* Right: State / Danger level indicators */}
         <div className="flex flex-col items-end gap-2">
           {user ? (
-            <div className="bg-black/50 border border-white/10 px-3 py-1 rounded text-white text-xs font-mono">
+            <div className="bg-black/50 border border-white/10 px-3 py-1 rounded text-white text-xs font-mono pointer-events-auto">
               {user.displayName || user.email}
             </div>
           ) : (
             <button
               onClick={onSignInClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold uppercase tracking-wider"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold uppercase tracking-wider pointer-events-auto"
             >
               Sign In
             </button>
