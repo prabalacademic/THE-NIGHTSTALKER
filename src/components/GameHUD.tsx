@@ -6,12 +6,9 @@ interface GameHUDProps {
   playerStats: PlayerStats;
   monsterState: MonsterState;
   monsterDistance: number;
-  onLeaveClick: () => void;
-  user: any;
-  onSignInClick: () => void;
 }
 
-export default function GameHUD({ playerStats, monsterState, monsterDistance, onLeaveClick, user, onSignInClick }: GameHUDProps) {
+export default function GameHUD({ playerStats, monsterState, monsterDistance }: GameHUDProps) {
   const staminaPercent = Math.max(0, Math.min(100, playerStats.stamina));
   
   // Calculate proximity intensity
@@ -104,50 +101,11 @@ export default function GameHUD({ playerStats, monsterState, monsterDistance, on
           </div>
         </div>
 
-        {/* Center: Leave Button */}
-        <button
-          onClick={onLeaveClick}
-          className="pointer-events-auto flex flex-col items-center justify-center bg-black/75 hover:bg-black/90 border border-red-600/30 hover:border-red-600 px-4 py-1.5 rounded-lg backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 group shadow-[0_4px_12px_rgba(220,38,38,0.15)] hover:shadow-[0_4px_16px_rgba(220,38,38,0.35)] cursor-pointer self-start"
-        >
-          {/* Mountain Peak Logo matching the header */}
-          <svg 
-            viewBox="0 0 100 60" 
-            className="w-10 h-6 text-red-600 fill-current filter drop-shadow-[0_2px_4px_rgba(220,38,38,0.4)] transition-colors group-hover:text-red-500"
-          >
-            <defs>
-              <mask id="mountain-mask-hud">
-                {/* Background of mask is white */}
-                <rect width="100" height="60" fill="white" />
-                {/* Cutouts */}
-                <polygon points="50,10 57,26 46,42 51,31" fill="black" />
-                <polygon points="31,31 34,35 33,38" fill="black" />
-                <polygon points="68,25 74,35 71,38" fill="black" />
-              </mask>
-            </defs>
-            <path
-              d="M 10,55 L 32,30 L 38,38 L 50,10 L 62,38 L 68,25 L 90,55 Z"
-              mask="url(#mountain-mask-hud)"
-            />
-          </svg>
-          <span className="text-[8px] text-red-500 font-mono font-bold tracking-[0.2em] uppercase mt-0.5 group-hover:text-red-400">
-            LEAVE
-          </span>
-        </button>
+        {/* Center: Leave Button - REMOVED, now in top-right HUD compartment */}
+        <div />
 
         {/* Right: State / Danger level indicators */}
         <div className="flex flex-col items-end gap-2">
-          {user ? (
-            <div className="bg-black/50 border border-white/10 px-3 py-1 rounded text-white text-xs font-mono pointer-events-auto">
-              {user.displayName || user.email}
-            </div>
-          ) : (
-            <button
-              onClick={onSignInClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold uppercase tracking-wider pointer-events-auto"
-            >
-              Sign In
-            </button>
-          )}
           {monsterState === 'CHASE' ? (
             <div className="bg-red-950/80 border border-red-600 px-4 py-2 rounded-lg backdrop-blur-md flex items-center gap-2 shadow-lg animate-bounce">
               <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />

@@ -20,6 +20,8 @@ interface GameMenuProps {
   onAdminLogin: (id: string, pass: string) => void;
   onAdjustSpeed: () => void;
   onLogout: () => void;
+  user: any;
+  onSignIn: () => void;
 }
 
 export default function GameMenu({
@@ -36,6 +38,8 @@ export default function GameMenu({
   onAdminLogin,
   onAdjustSpeed,
   onLogout,
+  user,
+  onSignIn,
 }: GameMenuProps) {
   const [activeTab, setActiveTab] = useState<'MAIN' | 'HOWTO' | 'DOSSIER' | 'SETTINGS'>('MAIN');
   const [showModes, setShowModes] = useState(false);
@@ -73,6 +77,22 @@ export default function GameMenu({
       {/* Visual background static grid */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,0,0.08)_0%,transparent_75%)] pointer-events-none" />
       <div style={noiseStyle} className="absolute inset-0 opacity-[0.03] pointer-events-none" />
+
+      {/* User Status */}
+      <div className="absolute top-4 right-4 z-50">
+        {user ? (
+          <div className="bg-red-700/80 border border-red-500/50 px-3 py-2 rounded text-white text-[10px] font-mono tracking-wider">
+            {user.displayName || user.email}
+          </div>
+        ) : (
+          <button
+            onClick={onSignIn}
+            className="bg-red-700/80 hover:bg-red-600/90 text-white text-[10px] px-3 py-2 rounded font-bold uppercase tracking-wider border border-red-500/50 transition-all"
+          >
+            Sign In
+          </button>
+        )}
+      </div>
 
       {/* ==================== MAIN MENU ==================== */}
       {gameState === 'MENU' && (
