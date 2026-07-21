@@ -205,6 +205,7 @@ export default function App() {
   // Instead, support keys 1, 2, 3, 4 to select answers!
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT') return;
       if (gameState === 'ENCOUNTER') {
         if (['1', '2', '3', '4'].includes(e.key)) {
           e.preventDefault();
@@ -252,26 +253,14 @@ export default function App() {
 
       {/* 2. Interactive Game HUD overlay (Active when playing) */}
       {gameState === 'PLAYING' && (
-        <div className="absolute top-4 right-4 z-50 pointer-events-auto flex flex-col gap-2">
-          <div className="bg-red-700/80 border border-red-500/50 px-3 py-2 rounded text-white text-[10px] font-mono tracking-wider flex items-center gap-3">
-            <button
-              onClick={() => {
-                audio.triggerClick();
-                setShowLeaveConfirmation(true);
-              }}
-              className="hover:text-red-200 font-bold uppercase tracking-wider transition-all"
-            >
-              Leave
-            </button>
-          </div>
-        </div>
-      )}
-
-      {gameState === 'PLAYING' && (
         <GameHUD
           playerStats={playerStats}
           monsterState={monsterState}
           monsterDistance={monsterDistance}
+          onLeaveClick={() => {
+            audio.triggerClick();
+            setShowLeaveConfirmation(true);
+          }}
         />
       )}
 
