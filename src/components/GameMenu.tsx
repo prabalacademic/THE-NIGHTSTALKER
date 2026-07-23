@@ -45,6 +45,45 @@ export default function GameMenu({
   const [showModes, setShowModes] = useState(false);
   const [showLobby, setShowLobby] = useState(false);
   const [glitchText, setGlitchText] = useState('NIGHTSTALKER');
+  const [dossierText, setDossierText] = useState('');
+  const [isLoadingDossier, setIsLoadingDossier] = useState(false);
+  const [endMessage, setEndMessage] = useState('');
+
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      setEndMessage('');
+      fetch('/api/game-over-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fuses: fusesCollected, time: Math.round(completionTime) })
+      })
+      .then(res => res.json())
+      .then(data => { if (data.text) setEndMessage(data.text); })
+      .catch(() => {});
+    } else if (gameState === 'WIN') {
+      setEndMessage('');
+      fetch('/api/win-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ time: Math.round(completionTime) })
+      })
+      .then(res => res.json())
+      .then(data => { if (data.text) setEndMessage(data.text); })
+      .catch(() => {});
+    }
+  }, [gameState, fusesCollected, completionTime]);
+
+  useEffect(() => {
+    if (activeTab === 'DOSSIER' && !dossierText && !isLoadingDossier) {
+      setIsLoadingDossier(true);
+      fetch('/api/dossier', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.text) setDossierText(data.text);
+        })
+        .finally(() => setIsLoadingDossier(false));
+    }
+  }, [activeTab]);
 
   // Text glitch effect on the horror title
   useEffect(() => {
@@ -304,8 +343,12 @@ export default function GameMenu({
                   <div className="font-mono text-[10px] text-red-500 border-b border-white/5 pb-1 uppercase font-semibold">
                     Specimen: Nightstalker (Level 0 Entity)
                   </div>
-                  <p>
-                    Captured during surveillance inside the <span className="text-yellow-500 font-bold">Backrooms damp corridors</span>. Features dynamic morphing behavioral patterns:
+                  <p className="italic min-h-[40px]">
+                    {isLoadingDossier ? (
+                      <span className="text-red-500 animate-pulse">DECRYPTING CLASSIFIED DATA...</span>
+                    ) : dossierText || (
+                      "Captured during surveillance inside the Backrooms damp corridors. Features dynamic morphing behavioral patterns:"
+                    )}
                   </p>
                   <ul className="list-disc pl-4 space-y-1 text-gray-400 text-[11px]">
                     <li><strong className="text-white font-medium">Turquoise State (Curious):</strong> Eyes glow blue-green. Calm curiosity but tracks movement.</li>
@@ -430,8 +473,8 @@ export default function GameMenu({
               SYSTEM REPORT: DECEASED
             </span>
             <h2 className="text-4xl font-black text-red-600 uppercase tracking-tighter">YOU WERE CAUGHT</h2>
-            <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono">
-              The Nightstalker dragged you into the darkness of Black Painted Aarav.
+            <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono min-h-[32px]">
+              {endMessage || "The Nightstalker dragged you into the darkness of Black Painted Aarav."}
             </p>
           </div>
 
@@ -483,8 +526,8 @@ export default function GameMenu({
               STATUS: SECURE
             </span>
             <h2 className="text-4xl font-black text-white uppercase tracking-tighter">YOU ESCAPED!</h2>
-            <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono">
-              You powered up the spatial jump-gate and escaped the creature.
+            <p className="text-gray-400 text-xs mt-2 max-w-xs font-mono min-h-[32px]">
+              {endMessage || "You powered up the spatial jump-gate and escaped the creature."}
             </p>
           </div>
 

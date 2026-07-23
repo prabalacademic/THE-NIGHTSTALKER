@@ -91,6 +91,7 @@ export default function App() {
   const [hintText, setHintText] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminSpeed, setAdminSpeed] = useState(1.0);
+  const [isLoadingRiddle, setIsLoadingRiddle] = useState(false);
 
   // Touch & Keyboard joystick direction vector
   const [joystickVector, setJoystickVector] = useState({ x: 0, y: 0 });
@@ -158,6 +159,25 @@ export default function App() {
     }));
   };
 
+  const fetchRiddle = async () => {
+    setIsLoadingRiddle(true);
+    try {
+      const res = await fetch('/api/riddle', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentQuestion(data);
+      } else {
+        const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
+        setCurrentQuestion(QUESTIONS[randomIdx]);
+      }
+    } catch (e) {
+      const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
+      setCurrentQuestion(QUESTIONS[randomIdx]);
+    } finally {
+      setIsLoadingRiddle(false);
+    }
+  };
+
   const startEncounter = () => {
     setWrongCount(0);
     setHintUsed(false);
@@ -166,9 +186,8 @@ export default function App() {
     setCompletionTime(0);
     setShowLeaveConfirmation(false);
     
-    // Select a random question/riddle to solve before we can run
-    const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
-    setCurrentQuestion(QUESTIONS[randomIdx]);
+    // Select a dynamic riddle
+    fetchRiddle();
     
     setGameState('ENCOUNTER');
   };
@@ -185,9 +204,9 @@ export default function App() {
       if (nextCorrect >= 3) {
         setGameState('THE_TRUTH');
       } else {
-        // Get next question
-        const randomIdx = Math.floor(Math.random() * QUESTIONS.length);
-        setCurrentQuestion(QUESTIONS[randomIdx]);
+        // Get next dynamic question
+        setCurrentQuestion(null);
+        fetchRiddle();
       }
     } else {
       // Incorrect guess penalties
@@ -279,10 +298,12 @@ export default function App() {
 
       {/* Leave Confirmation Overlay Modal */}
       {showAuthModal && (
-        <AuthModal
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => {}}
-        />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={() => {}}
+          />
+        </div>
       )}
 
       {gameState === 'PLAYING' && showLeaveConfirmation && (
@@ -579,7 +600,11 @@ export default function App() {
             </div>
 
             {/* Riddle Question Block */}
-            {currentQuestion && (
+            {isLoadingRiddle ? (
+              <div className="flex flex-col gap-2 relative z-10 border-t border-b border-zinc-800/80 py-6 mt-1 items-center justify-center">
+                <div className="text-red-500 animate-pulse font-mono font-bold text-sm tracking-widest">ESTABLISHING SYNAPTIC LINK...</div>
+              </div>
+            ) : currentQuestion && (
               <div className="flex flex-col gap-2 relative z-10 border-t border-b border-zinc-800/80 py-3 mt-1">
                 <div className="flex justify-between items-center">
                   <span className="text-[9px] font-mono font-bold text-red-500 tracking-wider">
@@ -593,7 +618,7 @@ export default function App() {
             )}
 
             {/* Grid of Options */}
-            {currentQuestion && (
+            {!isLoadingRiddle && currentQuestion && (
               <div className="relative z-10 flex flex-col gap-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentQuestion.options.map((option, idx) => (

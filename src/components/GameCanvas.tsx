@@ -365,10 +365,13 @@ export default function GameCanvas({
     );
 
     // RENDERER
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio); // High DPI
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.VSMShadowMap; // Very soft realistic shadows
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic realistic lighting
+    renderer.toneMappingExposure = 0.9;
     mountRef.current.appendChild(renderer.domElement);
 
     // AMBIENT LIGHT
@@ -720,46 +723,118 @@ export default function GameCanvas({
     });
     fusesRef.current = fuses;
 
-    // BUILD PLAYER REPRESENTATION
+    // BUILD PLAYER REPRESENTATION (Roblox Bacon Hair Avatar)
     const playerGroup = new THREE.Group();
-    // Survivor hazmat/spacesuit body
-    const pBodyGeo = new THREE.SphereGeometry(1.1, 16, 16);
-    pBodyGeo.scale(1.0, 1.3, 1.0);
-    const pBodyMat = new THREE.MeshStandardMaterial({ color: 0xd84315, roughness: 0.6 }); // Dark tactical orange
-    const pBody = new THREE.Mesh(pBodyGeo, pBodyMat);
+    playerGroup.name = "player_group";
+    
+    const pBody = new THREE.Group(); // Inner group for walk cycle animation
     pBody.position.y = 1.3;
-    pBody.castShadow = true;
     playerGroup.add(pBody);
+    
+    // Materials
+    const skinMat = new THREE.MeshPhysicalMaterial({ color: 0xffdbb8, roughness: 0.6, metalness: 0.0 });
+    const shirtMat = new THREE.MeshPhysicalMaterial({ color: 0x0077b6, roughness: 0.8, metalness: 0.0 }); // Blue shirt
+    const jacketMat = new THREE.MeshPhysicalMaterial({ color: 0x111111, roughness: 0.9, metalness: 0.1 }); // Dark jacket
+    const pantsMat = new THREE.MeshPhysicalMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.0 }); // Dark pants
+    const hairMat = new THREE.MeshPhysicalMaterial({ color: 0x4a2a18, roughness: 0.7, metalness: 0.1 }); // Brown bacon hair
 
-    // Survivor helmet visors
-    const visorGeo = new THREE.SphereGeometry(0.75, 12, 12);
-    visorGeo.scale(1.0, 0.5, 1.0);
-    const visorMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
-    const visor = new THREE.Mesh(visorGeo, visorMat);
-    visor.position.set(0, 1.8, 0.6);
-    playerGroup.add(visor);
+    // Head
+    const pHeadGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+    const pHead = new THREE.Mesh(pHeadGeo, skinMat);
+    pHead.position.set(0, 1.5, 0); // Relative to pBody (y=1.3)
+    pHead.castShadow = true;
+    pBody.add(pHead);
 
-    // Flashlight object mounted on shoulder
-    const flashGeom = new THREE.CylinderGeometry(0.18, 0.25, 0.7, 8);
+    // Bacon Hair (Approximated with curved spikes/blocks)
+    const hairGeo = new THREE.BoxGeometry(0.85, 0.3, 0.85);
+    const hairBase = new THREE.Mesh(hairGeo, hairMat);
+    hairBase.position.set(0, 1.9, 0);
+    pBody.add(hairBase);
+    
+    // Hair spikes
+    const spike1Geo = new THREE.BoxGeometry(0.3, 0.5, 0.3);
+    const spike1 = new THREE.Mesh(spike1Geo, hairMat);
+    spike1.position.set(-0.2, 2.1, 0.1);
+    spike1.rotation.set(0.1, 0, 0.3);
+    pBody.add(spike1);
+    
+    const spike2Geo = new THREE.BoxGeometry(0.25, 0.6, 0.25);
+    const spike2 = new THREE.Mesh(spike2Geo, hairMat);
+    spike2.position.set(0.2, 2.1, -0.1);
+    spike2.rotation.set(-0.2, 0, -0.4);
+    pBody.add(spike2);
+
+    // Torso (Shirt with jacket overlay)
+    const pTorsoGeo = new THREE.BoxGeometry(1.2, 1.4, 0.6);
+    const pTorso = new THREE.Mesh(pTorsoGeo, shirtMat);
+    pTorso.position.set(0, 0.4, 0);
+    pTorso.castShadow = true;
+    pBody.add(pTorso);
+
+    // Jacket sides
+    const jacketLGeo = new THREE.BoxGeometry(0.2, 1.4, 0.65);
+    const jacketL = new THREE.Mesh(jacketLGeo, jacketMat);
+    jacketL.position.set(-0.55, 0.4, 0);
+    pBody.add(jacketL);
+    
+    const jacketRGeo = new THREE.BoxGeometry(0.2, 1.4, 0.65);
+    const jacketR = new THREE.Mesh(jacketRGeo, jacketMat);
+    jacketR.position.set(0.55, 0.4, 0);
+    pBody.add(jacketR);
+
+    // Arms
+    const pArmGeo = new THREE.BoxGeometry(0.4, 1.4, 0.4);
+    
+    const pLeftArm = new THREE.Mesh(pArmGeo, skinMat);
+    pLeftArm.name = "left_arm";
+    pLeftArm.position.set(-0.85, 0.4, 0);
+    pLeftArm.castShadow = true;
+    pBody.add(pLeftArm);
+    
+    const pRightArm = new THREE.Mesh(pArmGeo, skinMat);
+    pRightArm.name = "right_arm";
+    pRightArm.position.set(0.85, 0.4, 0);
+    pRightArm.castShadow = true;
+    pBody.add(pRightArm);
+
+    // Legs
+    const pLegGeo = new THREE.BoxGeometry(0.5, 1.4, 0.5);
+    
+    const pLeftLeg = new THREE.Mesh(pLegGeo, pantsMat);
+    pLeftLeg.name = "left_leg";
+    pLeftLeg.position.set(-0.3, -0.6, 0);
+    pLeftLeg.castShadow = true;
+    pBody.add(pLeftLeg);
+
+    const pRightLeg = new THREE.Mesh(pLegGeo, pantsMat);
+    pRightLeg.name = "right_leg";
+    pRightLeg.position.set(0.3, -0.6, 0);
+    pRightLeg.castShadow = true;
+    pBody.add(pRightLeg);
+    
+    // Flashlight object mounted on shoulder/chest
+    const flashGeom = new THREE.CylinderGeometry(0.12, 0.15, 0.5, 8);
     const flashMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
     const flashObj = new THREE.Mesh(flashGeom, flashMat);
-    flashObj.position.set(0.7, 1.6, 0.4);
+    flashObj.position.set(0.4, 0.7, 0.3); // Relative to pBody
     flashObj.rotation.x = Math.PI / 2;
-    playerGroup.add(flashObj);
+    pBody.add(flashObj);
 
     // FLASHLIGHT REAL POINT & SPOTLIGHT SOURCES
-    const flashlight = new THREE.SpotLight(0xffffff, 5.0, 30, Math.PI / 6, 0.5, 1.5);
-    flashlight.position.set(0.7, 1.6, 0.55);
-    flashlight.target.position.set(0, 1.6, 10);
+    const flashlight = new THREE.SpotLight(0xffffff, 8.0, 40, Math.PI / 5, 0.8, 1.2);
+    flashlight.position.set(0.4, 0.7, 0.3);
+    flashlight.target.position.set(0, 0.3, 10);
     flashlight.visible = playerRef.current.flashlightOn;
-    playerGroup.add(flashlight);
-    playerGroup.add(flashlight.target);
+    flashlight.castShadow = true;
+    flashlight.shadow.bias = -0.001;
+    pBody.add(flashlight);
+    pBody.add(flashlight.target);
 
     // Add small point light at source for flashlight glowing flare
-    const flashFlare = new THREE.PointLight(0xeeffff, 1.2, 1.5);
-    flashFlare.position.set(0.7, 1.6, 0.6);
+    const flashFlare = new THREE.PointLight(0xeeffff, 1.5, 1.5);
+    flashFlare.position.set(0.4, 0.7, 0.35);
     flashFlare.visible = playerRef.current.flashlightOn;
-    playerGroup.add(flashFlare);
+    pBody.add(flashFlare);
 
     flashlightRef.current = flashlight;
     flashFlareRef.current = flashFlare;
@@ -1298,6 +1373,18 @@ export default function GameCanvas({
           // Tilt body mesh on walk cycle
           pBody.rotation.z = Math.sin(time * 10) * 0.05 * (inputMag > 0 ? 1 : 0);
           pBody.position.y = 1.3 + Math.abs(Math.sin(time * 10)) * 0.1 * (inputMag > 0 ? 1 : 0);
+          
+          const lArm = playerRef.current.mesh.getObjectByName("left_arm");
+          const rArm = playerRef.current.mesh.getObjectByName("right_arm");
+          const lLeg = playerRef.current.mesh.getObjectByName("left_leg");
+          const rLeg = playerRef.current.mesh.getObjectByName("right_leg");
+          if (lArm && rArm && lLeg && rLeg) {
+            const swing = Math.sin(time * 10) * 0.6 * (inputMag > 0 ? 1 : 0);
+            lArm.rotation.x = swing;
+            rArm.rotation.x = -swing;
+            lLeg.rotation.x = -swing;
+            rLeg.rotation.x = swing;
+          }
         }
 
         // ==========================================
